@@ -2,6 +2,18 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+    const pathname = request.nextUrl.pathname.toLowerCase()
+
+    // 1. Immediately bypass session check for public/cron routes
+    if (
+        pathname.startsWith('/login') ||
+        pathname.startsWith('/signup') ||
+        pathname.startsWith('/auth') ||
+        pathname.startsWith('/api/cron')
+    ) {
+        return NextResponse.next()
+    }
+
     let response = NextResponse.next({
         request: {
             headers: request.headers,
@@ -64,13 +76,8 @@ export async function updateSession(request: NextRequest) {
         data: { session },
     } = await supabase.auth.getSession()
 
-    if (
-        !session &&
-        !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/signup') &&
-        !request.nextUrl.pathname.startsWith('/auth') &&
-        !request.nextUrl.pathname.startsWith('/api/cron')
-    ) {
+    // If no session and NOT on a public route, redirect to login
+    if (!session) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)

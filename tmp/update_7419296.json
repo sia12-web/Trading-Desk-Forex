@@ -1,0 +1,10 @@
+{
+  "job": {
+    "url": "https://trading-desk-production-00f0.up.railway.app/api/cron/story-agents",
+    "extendedData": {
+      "headers": {
+        "Authorization": "Bearer 7k9mP2xL8nQ5vR3zA1bC6wF4hJ0tY"
+      }
+    }
+  }
+}

@@ -176,7 +176,7 @@ export default function SettingsPage() {
             })
             const data = await res.json()
             if (res.ok) {
-                alert('✅ Test message sent! Check your Telegram.')
+                alert('🎯 Test message sent! Check your Telegram.')
             } else {
                 alert(`❌ ${data.error || 'Failed to send test message'}`)
             }
@@ -544,7 +544,7 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                {/* 24/7 Telegram Mentor */}
+                {/* Telegram Notifications */}
                 <section className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] overflow-hidden">
                     <div className="p-10 border-b border-neutral-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex items-center gap-6">
@@ -552,52 +552,17 @@ export default function SettingsPage() {
                                 <Send size={32} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold">24/7 Telegram Mentor</h3>
-                                <p className="text-neutral-500 text-sm mt-1">Get real-time coaching throughout your entire trading day.</p>
+                                <h3 className="text-2xl font-bold">Telegram Notifications</h3>
+                                <p className="text-neutral-500 text-sm mt-1">Receive automated AI briefings, story updates, and scenario alerts.</p>
                             </div>
                         </div>
                         <div className={`px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-xs uppercase tracking-widest ${telegramEnabled ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-neutral-800 text-neutral-500 border border-neutral-700'}`}>
                             {telegramEnabled ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-                            {telegramEnabled ? 'Active' : 'Inactive'}
+                            {telegramEnabled ? 'Connected' : 'Disconnected'}
                         </div>
                     </div>
 
-                    <div className="p-10 space-y-8">
-                        {/* Setup Instructions */}
-                        <div className="bg-blue-950/20 border border-blue-900/30 rounded-2xl p-6">
-                            <h4 className="text-sm font-bold text-blue-400 mb-3 flex items-center gap-2">
-                                <Send size={16} />
-                                Quick Setup (2 minutes)
-                            </h4>
-                            <ol className="space-y-2 text-sm text-neutral-400">
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-400">1.</span>
-                                    <span>Open Telegram → search <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-blue-300">@BotFather</code></span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-400">2.</span>
-                                    <span>Send <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-blue-300">/newbot</code> and follow prompts to create your bot</span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-400">3.</span>
-                                    <span>Copy the <strong>BOT TOKEN</strong> and add to <code className="bg-neutral-800 px-1.5 py-0.5 rounded">.env.local</code></span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-400">4.</span>
-                                    <span>Search for your bot in Telegram, send a message</span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-400">5.</span>
-                                    <span>Visit: <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-xs">api.telegram.org/botYOUR_TOKEN/getUpdates</code></span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-400">6.</span>
-                                    <span>Find your <strong>chat ID</strong> in the response and paste below</span>
-                                </li>
-                            </ol>
-                        </div>
-
-                        {/* Telegram Chat ID Input */}
+                    <div className="p-10 space-y-10">
                         <div className="space-y-6">
                             <div className="relative group">
                                 <label className="block text-xs font-black text-neutral-500 uppercase tracking-widest mb-3">
@@ -622,7 +587,7 @@ export default function SettingsPage() {
                                         ) : (
                                             <Send size={14} />
                                         )}
-                                        {testingTelegram ? 'Sending...' : 'Test Connection'}
+                                        {testingTelegram ? 'Testing...' : 'Test Connection'}
                                     </button>
                                 </div>
                                 <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-3 flex items-center gap-2">
@@ -638,8 +603,8 @@ export default function SettingsPage() {
                                         <Bell size={20} />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">Master Telegram Switch</p>
-                                        <p className="text-xs text-neutral-500 mt-1">Global toggle for all 24/7 coaching alerts</p>
+                                        <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">Enable Telegram Alerts</p>
+                                        <p className="text-xs text-neutral-500 mt-1">Receive briefings and alerts directly on your device</p>
                                     </div>
                                 </div>
                                 <button
@@ -648,70 +613,6 @@ export default function SettingsPage() {
                                 >
                                     <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${telegramEnabled ? 'translate-x-6 scale-110' : 'translate-x-0'}`} />
                                 </button>
-                            </div>
-                        </div>
-
-                        {/* Trading Hours */}
-                        <div className="space-y-4">
-                            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                                <Clock size={16} className="text-amber-500" />
-                                Trading Schedule (UTC)
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Wake Up Time</label>
-                                    <input
-                                        type="time"
-                                        value={wakeUpTime}
-                                        onChange={(e) => setWakeUpTime(e.target.value)}
-                                        className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Trading Start</label>
-                                    <input
-                                        type="time"
-                                        value={tradingStartTime}
-                                        onChange={(e) => setTradingStartTime(e.target.value)}
-                                        className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Trading End</label>
-                                    <input
-                                        type="time"
-                                        value={tradingEndTime}
-                                        onChange={(e) => setTradingEndTime(e.target.value)}
-                                        className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-blue-500"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Notification Types */}
-                        <div className="space-y-4">
-                            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                                <Bell size={16} className="text-green-500" />
-                                Notification Types
-                            </h4>
-                            <div className="space-y-3">
-                                {[
-                                    { label: 'Hourly Check-ins', desc: 'Stay on track during trading hours', value: enableHourlyCheckins, setter: setEnableHourlyCheckins },
-                                    { label: 'Break Reminders', desc: 'Avoid overtrading with regular breaks', value: enableBreakReminders, setter: setEnableBreakReminders }
-                                ].map((item) => (
-                                    <div key={item.label} className="flex items-center justify-between p-5 bg-neutral-800/30 rounded-2xl border border-neutral-700/50 hover:bg-neutral-800/50 transition-all group cursor-pointer" onClick={() => item.setter(!item.value)}>
-                                        <div>
-                                            <p className="text-sm font-bold text-white group-hover:text-green-400 transition-colors">{item.label}</p>
-                                            <p className="text-xs text-neutral-500 mt-1">{item.desc}</p>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            className={`relative w-12 h-6 rounded-full transition-all duration-300 ${item.value ? 'bg-green-600 shadow-[0_0_15px_-5px_rgba(22,163,74,0.5)]' : 'bg-neutral-700'}`}
-                                        >
-                                            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${item.value ? 'translate-x-6 scale-110' : 'translate-x-0'}`} />
-                                        </button>
-                                    </div>
-                                ))}
                             </div>
                         </div>
 
@@ -729,7 +630,7 @@ export default function SettingsPage() {
                                 ) : (
                                     <>
                                         <CheckCircle2 size={14} />
-                                        Save Mentor Settings
+                                        Save Notification Settings
                                     </>
                                 )}
                             </button>

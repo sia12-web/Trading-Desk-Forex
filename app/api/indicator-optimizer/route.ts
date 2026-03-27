@@ -74,8 +74,8 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const data = await collectStoryData(pair)
         const supabase = await createClient()
+        const data = await collectStoryData(user.id, pair, supabase)
         const report = await runIndicatorOptimizer(pair, data, user.id, supabase)
 
         if (!report) {

@@ -28,7 +28,7 @@ export async function runAgentsForPair(
     }
 
     // Collect story data (shared with optimizer agent, avoids duplicate OANDA calls)
-    const data = needsOptimizer ? await collectStoryData(pair) : null
+    const data = needsOptimizer ? await collectStoryData(userId, pair, client) : null
 
     // Run agents — each with independent try/catch
     const results: AgentIntelligence = {

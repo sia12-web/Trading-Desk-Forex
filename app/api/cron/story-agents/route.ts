@@ -13,11 +13,22 @@ export const maxDuration = 300 // 5 minutes
  * Individual try/catch — one pair's failure doesn't stop others.
  */
 export async function GET(req: NextRequest) {
-    // Verify cron secret
+    // Verify cron secret (Bearer header or ?key= param)
+    const secret = (process.env.CRON_SECRET || '').trim()
     const authHeader = req.headers.get('authorization')
-    const expectedSecret = `Bearer ${(process.env.CRON_SECRET || '').trim()}`
-    
-    if (!authHeader || authHeader.trim() !== expectedSecret) {
+    const queryKey = req.nextUrl.searchParams.get('key')
+    const expectedSecret = `Bearer ${secret}`
+
+    if (!secret) {
+        console.error('Agents cron: CRON_SECRET is not configured')
+        return NextResponse.json({ error: 'Config missing' }, { status: 500 })
+    }
+
+    const isAuthorized = 
+        (authHeader && authHeader.trim() === expectedSecret) || 
+        (queryKey && queryKey.trim() === secret)
+
+    if (!isAuthorized) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

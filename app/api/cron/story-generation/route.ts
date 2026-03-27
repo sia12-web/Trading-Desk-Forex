@@ -18,10 +18,21 @@ const MIN_ATR_MOVE_RATIO = 0.3 // Price must move at least 30% of ATR since last
  * 4. Scenario just resolved? → always generate (important plot development)
  */
 export async function GET(req: NextRequest) {
+    const secret = (process.env.CRON_SECRET || '').trim()
     const authHeader = req.headers.get('authorization')
-    const expectedSecret = `Bearer ${(process.env.CRON_SECRET || '').trim()}`
+    const queryKey = req.nextUrl.searchParams.get('key')
+    const expectedSecret = `Bearer ${secret}`
 
-    if (!authHeader || authHeader.trim() !== expectedSecret) {
+    if (!secret) {
+        console.error('[Cron:StoryGen] CRON_SECRET is not configured')
+        return NextResponse.json({ error: 'Config missing' }, { status: 500 })
+    }
+
+    const isAuthorized = 
+        (authHeader && authHeader.trim() === expectedSecret) || 
+        (queryKey && queryKey.trim() === secret)
+
+    if (!isAuthorized) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

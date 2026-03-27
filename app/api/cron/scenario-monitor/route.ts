@@ -11,10 +11,21 @@ export const maxDuration = 60
  * Auth: Bearer CRON_SECRET
  */
 export async function GET(req: NextRequest) {
+    const secret = (process.env.CRON_SECRET || '').trim()
     const authHeader = req.headers.get('authorization')
-    const expectedSecret = `Bearer ${(process.env.CRON_SECRET || '').trim()}`
+    const queryKey = req.nextUrl.searchParams.get('key')
+    const expectedSecret = `Bearer ${secret}`
 
-    if (!authHeader || authHeader.trim() !== expectedSecret) {
+    if (!secret) {
+        console.error('[ScenarioMonitor Cron] CRON_SECRET is not configured')
+        return NextResponse.json({ error: 'Config missing' }, { status: 500 })
+    }
+
+    const isAuthorized = 
+        (authHeader && authHeader.trim() === expectedSecret) || 
+        (queryKey && queryKey.trim() === secret)
+
+    if (!isAuthorized) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

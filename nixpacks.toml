@@ -1,0 +1,8 @@
+[build]
+command = "npm run build"
+
+[deploy]
+startCommand = "npm start"
+# Next.js standalone doesn't need much RAM, but build does
+# Nixpacks will automatically cache the .next folder
+cacheDirectories = ["node_modules", ".next/cache"]

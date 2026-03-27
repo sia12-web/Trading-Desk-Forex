@@ -26,13 +26,16 @@ const root = process.cwd();
 const standaloneDir = path.join(root, '.next', 'standalone');
 
 if (fs.existsSync(standaloneDir)) {
-  console.log('Detected standalone output. Copying public and static assets...');
+  console.log(`Detected standalone output at ${standaloneDir}. Copying assets...`);
   
-  // Copy public folder to .next/standalone/public
-  copyDir(path.join(root, 'public'), path.join(standaloneDir, 'public'));
+  const publicDest = path.join(standaloneDir, 'public');
+  const staticDest = path.join(standaloneDir, '.next', 'static');
   
-  // Copy .next/static to .next/standalone/.next/static
-  copyDir(path.join(root, '.next', 'static'), path.join(standaloneDir, '.next', 'static'));
+  console.log(`Copying public folder to ${publicDest}...`);
+  copyDir(path.join(root, 'public'), publicDest);
+  
+  console.log(`Copying .next/static to ${staticDest}...`);
+  copyDir(path.join(root, '.next', 'static'), staticDest);
   
   console.log('Successfully copied assets to standalone directory.');
 } else {

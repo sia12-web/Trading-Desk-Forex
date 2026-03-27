@@ -41,6 +41,11 @@ export default function StoryPage() {
                         fetch(`/api/story/episodes?pair=${encodeURIComponent(sub.pair)}&limit=1`),
                         fetch(`/api/story/scenarios?pair=${encodeURIComponent(sub.pair)}`),
                     ])
+                    if (!episodesRes.ok || !scenariosRes.ok) {
+                        const err = !episodesRes.ok ? await episodesRes.text() : await scenariosRes.text()
+                        throw new Error(`Failed to load data: ${err}`)
+                    }
+
                     const { episodes } = await episodesRes.json()
                     const { scenarios } = await scenariosRes.json()
 

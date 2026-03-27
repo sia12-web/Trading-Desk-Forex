@@ -15,6 +15,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'pair is required' }, { status: 400 })
     }
 
-    const scenarios = await getActiveScenarios(user.id, pair)
-    return NextResponse.json({ scenarios })
+    try {
+        const scenarios = await getActiveScenarios(user.id, pair)
+        return NextResponse.json({ scenarios })
+    } catch (error) {
+        console.error('API /api/story/scenarios error:', error)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    }
 }

@@ -106,8 +106,8 @@ export async function createEpisode(
     userId: string,
     pair: string,
     episodeData: {
-        episode_number: number
-        season_number?: number
+        episode_number: number,
+        season_number?: number,
         title: string
         narrative: string
         characters: Record<string, unknown>

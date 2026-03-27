@@ -17,6 +17,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'pair is required' }, { status: 400 })
     }
 
-    const episodes = await getEpisodes(user.id, pair, limit, offset)
-    return NextResponse.json({ episodes })
+    try {
+        const episodes = await getEpisodes(user.id, pair, limit, offset)
+        return NextResponse.json({ episodes })
+    } catch (error) {
+        console.error('API /api/story/episodes error:', error)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    }
 }

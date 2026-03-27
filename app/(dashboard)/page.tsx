@@ -7,6 +7,7 @@ import { format } from 'date-fns'
 import { AccountRiskWidget } from '@/components/dashboard/AccountRiskWidget'
 import { MarketSessionsWidget } from '@/components/dashboard/MarketSessionsWidget'
 import { IndicatorOptimizerWidget } from '@/components/dashboard/IndicatorOptimizerWidget'
+import { VolatilePairsWidget } from '@/components/dashboard/VolatilePairsWidget'
 import { MarketIndicesWidget } from './_components/MarketIndicesWidget'
 
 
@@ -140,6 +141,8 @@ export default async function DashboardPage() {
                     <div className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl relative">
                         <AccountRiskWidget />
                     </div>
+
+                    <VolatilePairsWidget />
 
                     <MarketIndicesWidget />
 

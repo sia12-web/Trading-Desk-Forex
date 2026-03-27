@@ -9,13 +9,19 @@ const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@tradedesk.app'
 // Use try-catch to prevent build failures if keys are invalid/corrupt
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
     try {
-        // Remove potential quotes or whitespace that might be in the environment string
-        const cleanPublicKey = VAPID_PUBLIC_KEY.replace(/['"]/g, '').trim()
-        const cleanPrivateKey = VAPID_PRIVATE_KEY.replace(/['"]/g, '').trim()
+        // Clean keys: remove whitespaces, quotes, and handle possible line breaks from ENV
+        const cleanPublicKey = VAPID_PUBLIC_KEY.replace(/['"\s]/g, '').trim()
+        const cleanPrivateKey = VAPID_PRIVATE_KEY.replace(/['"\s]/g, '').trim()
+        
+        if (cleanPublicKey.length === 0 || cleanPrivateKey.length === 0) {
+            throw new Error('VAPID keys are empty after cleaning')
+        }
         
         webpush.setVapidDetails(VAPID_SUBJECT, cleanPublicKey, cleanPrivateKey)
     } catch (error: any) {
-        console.error('Failed to set VAPID details (Push notifications disabled):', error.message)
+        console.error('Push Service Init Error:', error.message)
+        console.error('Public Key Length:', VAPID_PUBLIC_KEY.length)
+        console.error('Check your Railway environment variables for hidden spaces or quotes.')
     }
 }
 

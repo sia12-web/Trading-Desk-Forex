@@ -1,5 +1,6 @@
 import { getTrade } from '@/lib/data/trades'
 import { getScreenshotUrl } from '@/lib/data/screenshots'
+import { getStoryContextForTrade } from '@/lib/data/story-positions'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -23,6 +24,7 @@ import { calculatePips, estimatePnL } from '@/lib/utils/forex'
 import { format } from 'date-fns'
 import Image from 'next/image'
 import { TradeDetailActions } from '@/app/(dashboard)/journal/_components/TradeDetailActions'
+import { StoryPositionContext } from '@/app/(dashboard)/journal/_components/StoryPositionContext'
 
 interface TradeDetailPageProps {
     params: Promise<{
@@ -73,6 +75,14 @@ export default async function TradeDetailPage({ params }: TradeDetailPageProps) 
     }
 
     if (!trade) notFound()
+
+    // Fetch story position context (if trade is linked to a story)
+    const storyContext = await getStoryContextForTrade({
+        oanda_trade_id: trade.oanda_trade_id,
+        story_episode_id: trade.story_episode_id,
+        story_season_number: trade.story_season_number,
+        pair: trade.pair,
+    }).catch(() => null)
 
     const pnl = trade.trade_pnl?.[0]
 
@@ -243,6 +253,18 @@ export default async function TradeDetailPage({ params }: TradeDetailPageProps) 
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Story Position Context */}
+            {storyContext && (
+                <StoryPositionContext
+                    position={storyContext.position}
+                    adjustments={storyContext.adjustments}
+                    entryEpisode={storyContext.entryEpisode}
+                    closeEpisode={storyContext.closeEpisode}
+                    pair={trade.pair}
+                    seasonNumber={trade.story_season_number}
+                />
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">

@@ -26,8 +26,6 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | `/` | Dashboard | DailyPlanWidget + Market Indices + Account overview |
 | `/story` | Story Hub | Pair subscriptions, episode list, scenario tracking |
 | `/story/[pair]` | Story Detail | Episodes + scenarios for a specific pair |
-| `/scenario-analysis` | Scenario Analysis | Institutional-grade weekly preparation reports |
-| `/scenario-analysis/[id]` | Analysis Detail | Full 5-section scenario analysis report |
 | `/ai-usage` | AI Usage | Token usage, costs, and performance per model |
 | `/trade` | Trade Execution | Manual trade form with OANDA integration |
 | `/positions` | Open Positions | Live OANDA positions + planned trades |
@@ -90,14 +88,6 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | GET/DELETE | `/api/story/subscriptions/[pair]` | Get/remove pair subscription |
 | GET/PUT | `/api/story/bible` | Get/update story bible |
 
-### Scenario Analysis
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/api/scenario-analysis/generate` | Trigger analysis generation (background task) |
-| GET | `/api/scenario-analysis` | List analyses for a pair |
-| GET | `/api/scenario-analysis/[id]` | Full analysis detail |
-| GET | `/api/scenario-analysis/latest` | Latest non-expired for a pair |
-
 ### AI Usage
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
@@ -127,12 +117,13 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | GET | `/api/news/fetch` | Forex news from external sources |
 | GET | `/api/pairs/info` | Pair metadata (pip size, etc.) |
 
-### Cron Jobs (Protected by `CRON_SECRET`)
+### Cron Jobs (Protected by `CRON_SECRET`, scheduled via Supabase pg_cron + pg_net)
 | Endpoint | Schedule | Purpose |
 |----------|----------|---------|
-| `/api/cron/story-agents` | 4AM UTC weekdays | Run intelligence agents (Optimizer, News, Cross-Market) |
-| `/api/cron/story-generation` | 5AM UTC weekdays | Auto-generate episodes for subscribed pairs |
-| `/api/cron/scenario-monitor` | Every 15 min | Check active scenarios vs OANDA prices |
+| `/api/cron/scenario-analysis` | **Mon 3:30 AM UTC** | Weekly institutional scenario analysis per pair |
+| `/api/cron/story-agents` | **4:00 AM UTC Mon-Fri** | Daily intelligence agents (Optimizer, News, Cross-Market) |
+| `/api/cron/story-generation` | **5:00 AM UTC Mon-Fri** | Daily episode generation for subscribed pairs |
+| `/api/cron/scenario-monitor` | **Every 15 min** | Check active scenarios vs OANDA prices, auto-resolve |
 
 ### Utilities
 | Method | Endpoint | Purpose |
@@ -248,50 +239,39 @@ The narrative-based forex analysis feature — follow pairs like a TV show.
 - **Button UX**: "Begin the Story" (0 episodes) vs "Write Next Episode" (>0), auto-generate S1E1 on pair subscription
 - **Anti-spam**: Max 1 bot-triggered generation per pair per 6 hours
 - **Market hours**: No-op on weekends (Sat + Sun before 10PM UTC + Fri after 10PM UTC)
+- **Position Tracker**: AI-guided trading positions that persist across episodes (see below)
 
----
+### Story Position Tracker
+AI tells the trader when to enter, hold, adjust, or close across episodes.
 
-## Scenario Analysis
-
-Institutional-grade weekly preparation reports — standalone analytical feature powered by tri-model AI.
-
-### Core Pipeline
-- **Entry**: `lib/scenario-analysis/pipeline.ts` → `generateScenarioAnalysis(userId, pair, taskId)`
-- **Flow**: Gemini (structural scan) → DeepSeek (probability validation) → Claude (institutional synthesis)
-- **Duration**: ~3-4 min per analysis (background task)
-- **Expiry**: 24 hours per analysis
-
-### Components
 | Module | Path | Purpose |
 |--------|------|---------|
-| Types | `lib/scenario-analysis/types.ts` | TypeScript interfaces for 5 sections |
-| Pipeline | `lib/scenario-analysis/pipeline.ts` | Tri-model orchestration |
-| Context | `lib/scenario-analysis/context.ts` | Cross-feature integration helpers |
-| Data | `lib/data/scenario-analyses.ts` | CRUD operations |
+| Position Data | `lib/data/story-positions.ts` | CRUD for positions + adjustments |
+| Types | `lib/story/types.ts` → `PositionGuidance` | AI output schema |
+| Pipeline | `lib/story/pipeline.ts` → `processPositionGuidance()` | Auto-process after each episode |
+| Narrator Prompt | `lib/story/prompts/claude-narrator.ts` | Injects active position context + guidance rules |
 
-### Prompts
-| Prompt | Path | AI Model |
-|--------|------|----------|
-| Gemini Scanner | `lib/scenario-analysis/prompts/gemini-scanner.ts` | Gemini |
-| DeepSeek Validator | `lib/scenario-analysis/prompts/deepseek-validator.ts` | DeepSeek |
-| Claude Synthesizer | `lib/scenario-analysis/prompts/claude-synthesizer.ts` | Claude |
+**API Routes:**
+- `GET /api/story/positions?pair=EUR/USD` — list all positions for a pair
+- `GET /api/story/positions/[id]` — position with full adjustment journey
+- `POST /api/story/positions/[id]/activate` — user confirms suggested position
+- `POST /api/story/positions/[id]/link-trade` — link OANDA trade ID
 
-### 5-Section Report
-1. **Market Context** — structure summary, key levels, liquidity pools, anomalies, bias
-2. **Institutional Scenarios** — 3-5 scenarios with institutional narrative, trigger/invalidation, targets
-3. **Historical Patterns** — weekly behaviors, conditional "if X then Y" patterns
-4. **Impact Factors** — USD strength, risk sentiment, session dynamics, news, correlated pairs
-5. **Actionable Takeaways** — preparation checklist, key levels watchlist, avoid list
+**UI Components** (`app/(dashboard)/story/_components/`):
+- `PositionGuidanceCard` — current episode's AI recommendation (enter/hold/adjust/close/wait)
+- `PositionJourney` — visual timeline of position life across episodes
+- `ScenarioProximity` — gauge showing price distance to scenario triggers/invalidations
 
-### Cross-Feature Integration
-- **Story Narrator**: Pipeline fetches latest non-expired analysis via `getLatestScenarioAnalysisForPrompt()`, injects compact summary + scenario titles into narrator prompt
-- **Context Helper**: `buildScenarioAnalysisContextBlock()` formats analysis for any AI prompt injection
+**Tables:** `story_positions`, `story_position_adjustments` (RLS: `auth.uid() = user_id`)
 
-### Reused Infrastructure
-- Data collection: `collectStoryData()` from Story
-- News: `summarizeNewsForStory()` from Story
-- Intelligence: `getAgentReportsForPair()` from Story agents
-- AI clients, JSON parsing, rate limiting, background tasks — all shared
+**Flow:** Each episode → AI outputs `position_guidance` → pipeline creates/adjusts/closes position → UI shows journey
+
+### Scenario Analysis (Internal — No UI)
+Auto-generated weekly via cron. Story pipeline consumes the latest analysis as institutional context.
+- **Pipeline**: `lib/scenario-analysis/pipeline.ts` → `generateScenarioAnalysis(userId, pair, taskId, options?)`
+- **Flow**: Gemini (scanner) → DeepSeek (validator) → Claude (synthesizer) → stored in `scenario_analyses` table
+- **Cron**: `scenario-analysis-weekly` — Monday 3:30 AM UTC via `/api/cron/scenario-analysis`
+- **Story integration**: `getLatestScenarioAnalysisForPrompt()` injects institutional context into narrator
 
 ---
 
@@ -354,6 +334,8 @@ Institutional-grade weekly preparation reports — standalone analytical feature
 | `story_bibles` | Persistent arc memory per pair |
 | `story_seasons` | Season grouping (20 episodes/season) |
 | `story_agent_reports` | Intelligence reports (optimizer, news, cross-market) |
+| `story_positions` | AI-guided positions across episodes (suggested→active→closed) |
+| `story_position_adjustments` | Journey log of SL/TP moves, partial closes per episode |
 
 ### Scenario Analysis Tables
 | Table | Purpose |

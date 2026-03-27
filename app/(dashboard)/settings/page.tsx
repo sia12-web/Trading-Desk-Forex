@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Settings, Shield, Globe, RefreshCw, Key, CreditCard, ChevronRight, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Target, CheckSquare, Brain, Sparkles, Cpu } from 'lucide-react'
+import { Settings, Shield, Globe, RefreshCw, Key, CreditCard, ChevronRight, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Target, CheckSquare, Brain, Sparkles, Cpu, Timer } from 'lucide-react'
 
 interface ConnectionResult {
     connected: boolean
@@ -61,6 +61,10 @@ export default function SettingsPage() {
     const [aiLoading, setAiLoading] = useState(false)
     const [aiManuallyTested, setAiManuallyTested] = useState(false)
 
+    // Cron Jobs state
+    const [cronResults, setCronResults] = useState<any>(null)
+    const [cronLoading, setCronLoading] = useState(false)
+
 
 
 
@@ -97,6 +101,19 @@ export default function SettingsPage() {
             })
         } finally {
             setAiLoading(false)
+        }
+    }
+
+    const testCronJobs = async () => {
+        setCronLoading(true)
+        try {
+            const res = await fetch('/api/cron/test', { cache: 'no-store' })
+            const data = await res.json()
+            setCronResults(data)
+        } catch {
+            setCronResults({ allPassed: false, jobs: [] })
+        } finally {
+            setCronLoading(false)
         }
     }
 
@@ -641,6 +658,85 @@ export default function SettingsPage() {
                                         Save Notification Settings
                                     </>
                                 )}
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Cron Jobs */}
+                <section className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] overflow-hidden">
+                    <div className="p-10 border-b border-neutral-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-6">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-orange-600/10 text-orange-500 flex items-center justify-center">
+                                <Timer size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold">Scheduled Jobs (Cron)</h3>
+                                <p className="text-neutral-500 text-sm mt-1">Automated AI pipelines running via Supabase pg_cron.</p>
+                            </div>
+                        </div>
+                        {cronResults && (
+                            <div className={`px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-xs uppercase tracking-widest ${cronResults.allPassed ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                                {cronResults.allPassed ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                                {cronResults.allPassed ? 'All Healthy' : 'Issues Found'}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="p-10 space-y-4">
+                        {(cronResults?.jobs || [
+                            { name: 'Scenario Analysis', schedule: 'Monday 3:30 AM UTC', description: 'Weekly institutional scenario report per pair', status: 'pending' },
+                            { name: 'Story Agents', schedule: 'Mon-Fri 4:00 AM UTC', description: 'Daily intelligence agents (Optimizer, News, Cross-Market)', status: 'pending' },
+                            { name: 'Story Generation', schedule: 'Mon-Fri 5:00 AM UTC', description: 'Daily episode generation for subscribed pairs', status: 'pending' },
+                            { name: 'Scenario Monitor', schedule: 'Every 15 minutes', description: 'Auto-resolve scenarios vs OANDA prices', status: 'pending' },
+                        ]).map((job: any) => (
+                            <div key={job.name} className={`p-5 rounded-2xl border flex items-center justify-between gap-4 ${
+                                job.status === 'success' ? 'bg-green-500/5 border-green-500/20' :
+                                job.status === 'error' ? 'bg-red-500/5 border-red-500/20' :
+                                'bg-neutral-800/30 border-neutral-700/50'
+                            }`}>
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                                        job.status === 'success' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' :
+                                        job.status === 'error' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]' :
+                                        'bg-neutral-600'
+                                    }`} />
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold text-neutral-200">{job.name}</span>
+                                            <span className="text-[10px] text-neutral-500 font-mono bg-neutral-800 px-2 py-0.5 rounded">{job.schedule}</span>
+                                        </div>
+                                        <p className="text-[11px] text-neutral-500 mt-0.5 truncate">{job.description}</p>
+                                    </div>
+                                </div>
+                                <div className="flex-shrink-0 text-right">
+                                    {job.status === 'success' && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-neutral-500 font-mono">{job.responseTime}ms</span>
+                                            <CheckCircle2 size={16} className="text-green-500" />
+                                        </div>
+                                    )}
+                                    {job.status === 'error' && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-red-400 max-w-[150px] truncate">{job.error}</span>
+                                            <XCircle size={16} className="text-red-500" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        <div className="pt-6 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <p className="text-sm text-neutral-500 max-w-md">
+                                Tests each endpoint with your <code className="text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded">CRON_SECRET</code>. Safe to run — jobs skip if no subscriptions exist.
+                            </p>
+                            <button
+                                onClick={testCronJobs}
+                                disabled={cronLoading}
+                                className="flex items-center gap-2 px-10 py-4 bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-neutral-700/50 hover:border-neutral-600 transition-all active:scale-95 disabled:opacity-50 shadow-lg hover:shadow-xl"
+                            >
+                                <RefreshCw size={14} className={cronLoading ? 'animate-spin' : ''} />
+                                {cronLoading ? 'Testing Jobs...' : 'Test All Jobs'}
                             </button>
                         </div>
                     </div>

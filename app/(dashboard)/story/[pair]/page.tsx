@@ -10,6 +10,9 @@ import { CharacterPanel } from '../_components/CharacterPanel'
 import { ScenarioCard } from '../_components/ScenarioCard'
 import { EpisodeTimeline } from '../_components/EpisodeTimeline'
 import { GenerateStoryButton } from '../_components/GenerateStoryButton'
+import { PositionGuidanceCard } from '../_components/PositionGuidanceCard'
+import { PositionJourney } from '../_components/PositionJourney'
+import { ScenarioProximity } from '../_components/ScenarioProximity'
 
 interface Episode {
     id: string
@@ -24,6 +27,7 @@ interface Episode {
     confidence: number | null
     next_episode_preview: string | null
     created_at: string
+    raw_ai_output?: { position_guidance?: any } | null
 }
 
 interface Scenario {
@@ -35,6 +39,10 @@ interface Scenario {
     trigger_conditions: string
     invalidation: string
     status: string
+    trigger_level?: number | null
+    invalidation_level?: number | null
+    trigger_direction?: string | null
+    invalidation_direction?: string | null
 }
 
 interface EpisodeListItem {
@@ -59,6 +67,8 @@ export default function PairStoryPage() {
     const [scenarios, setScenarios] = useState<Scenario[]>([])
     const [episodes, setEpisodes] = useState<EpisodeListItem[]>([])
     const [bible, setBible] = useState<any>(null)
+    const [positionData, setPositionData] = useState<{ position: any; adjustments: any[] } | null>(null)
+    const [allPositions, setAllPositions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     const loadEpisodes = useCallback(async () => {
@@ -81,12 +91,35 @@ export default function PairStoryPage() {
         setScenarios(data.scenarios || [])
     }, [])
 
+    const loadPositions = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/story/positions?pair=${encodeURIComponent(pair)}`)
+            const data = await res.json()
+            const positions = data.positions || []
+            setAllPositions(positions)
+
+            // Load adjustments for the most recent non-closed position (or latest closed)
+            const active = positions.find((p: any) => ['suggested', 'active', 'partial_closed'].includes(p.status))
+            const target = active || positions[0]
+            if (target) {
+                const detailRes = await fetch(`/api/story/positions/${target.id}`)
+                const detailData = await detailRes.json()
+                setPositionData(detailData)
+            } else {
+                setPositionData(null)
+            }
+        } catch (err) {
+            console.error('Failed to load positions:', err)
+        }
+    }, [pair])
+
     const loadData = useCallback(async () => {
         setLoading(true)
         try {
             const [eps] = await Promise.all([
                 loadEpisodes(),
-                loadBible()
+                loadBible(),
+                loadPositions()
             ])
             if (eps.length > 0) {
                 await loadEpisode(eps[0].id)
@@ -96,7 +129,7 @@ export default function PairStoryPage() {
         } finally {
             setLoading(false)
         }
-    }, [loadEpisodes, loadBible, loadEpisode])
+    }, [loadEpisodes, loadBible, loadEpisode, loadPositions])
 
     useEffect(() => { loadData() }, [loadData])
 
@@ -114,6 +147,11 @@ export default function PairStoryPage() {
 
     const handleSelectEpisode = (episodeId: string) => {
         loadEpisode(episodeId)
+    }
+
+    const handleActivatePosition = async (positionId: string) => {
+        await fetch(`/api/story/positions/${positionId}/activate`, { method: 'POST' })
+        await loadPositions()
     }
 
     const handleGenerateComplete = () => {
@@ -197,6 +235,13 @@ export default function PairStoryPage() {
                                 </div>
                             </section>
                         )}
+
+                        {/* Position Guidance */}
+                        <PositionGuidanceCard
+                            guidance={episode.raw_ai_output?.position_guidance || null}
+                            activePosition={positionData?.position && ['suggested', 'active', 'partial_closed'].includes(positionData.position.status) ? positionData.position : null}
+                            onActivate={handleActivatePosition}
+                        />
 
                         {/* Narrative */}
                         <section className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-6">
@@ -304,6 +349,26 @@ export default function PairStoryPage() {
                                     </span>
                                 </div>
                             </section>
+                        )}
+
+                        {/* Scenario Proximity Gauge */}
+                        {scenarios.length > 0 && episode.key_levels?.entries?.[0] && (
+                            <ScenarioProximity
+                                scenarios={scenarios}
+                                currentPrice={episode.key_levels.entries[0]}
+                                positionEntry={positionData?.position?.entry_price ?? positionData?.position?.suggested_entry}
+                            />
+                        )}
+
+                        {/* Position Journey */}
+                        {positionData && positionData.adjustments.length > 0 && (
+                            <PositionJourney
+                                position={positionData.position}
+                                adjustments={positionData.adjustments}
+                                episodeTitles={Object.fromEntries(
+                                    episodes.map((ep: any) => [ep.episode_number, ep.title])
+                                )}
+                            />
                         )}
 
                         {/* Episode Timeline */}

@@ -1,6 +1,7 @@
 import type { StoryDataPayload, StoryNewsContext } from '../types'
 import type { StoryBible } from '../bible'
 import type { AgentIntelligence } from '../agents/types'
+import type { StoryPosition, PositionAdjustment } from '@/lib/data/story-positions'
 
 interface PreviousEpisode {
     episode_number: number
@@ -39,6 +40,11 @@ interface SeasonSummary {
  *
  * V3: AI-driven seasons, season archive for deep memory, trade-episode linkage.
  */
+export interface ActivePositionContext {
+    position: StoryPosition
+    adjustments: PositionAdjustment[]
+}
+
 export function buildStoryNarratorPrompt(
     data: StoryDataPayload,
     geminiOutput: string,
@@ -51,7 +57,9 @@ export function buildStoryNarratorPrompt(
     flaggedLevels?: Array<{ level: number; source: string; reason: string }>,
     seasonArchive?: SeasonSummary[],
     forceSeasonFinale?: boolean,
-    latestScenarioAnalysis?: string | null
+    latestScenarioAnalysis?: string | null,
+    activePosition?: ActivePositionContext | null,
+    riskContext?: string | null
 ): string {
     // ── Season Archive block (deep cross-season memory) ──
     const archiveBlock = seasonArchive && seasonArchive.length > 0
@@ -150,6 +158,9 @@ ${trades.map(t => {
 **TASK**: Reference these trades in your story. If a trade has season/episode context, acknowledge WHEN in the story it was opened. Did the trader follow the scenario? Was the position successful? Active positions create narrative tension.`
         : 'No recent trades recorded for this pair.'
 
+    // ── Active position block ──
+    const activePositionBlock = activePosition ? buildActivePositionBlock(activePosition, data.currentPrice) : ''
+
     // ── Force finale nudge ──
     const forceFinaleBlock = forceSeasonFinale
         ? `\n\n⚠️ SEASON FINALE REQUIRED: This season has reached the maximum episode limit. You MUST set is_season_finale to true and write this as a season-ending episode. Tie up loose threads and provide a comprehensive season summary.`
@@ -180,6 +191,10 @@ ${intelligenceBlock}
 ${scenarioAnalysisBlock}
 
 ${tradesBlock}
+
+${activePositionBlock}
+
+${riskContext || ''}
 
 ## CURRENT DATA (Episode ${currentEpisodeNumber})
 
@@ -277,7 +292,25 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story. Respond with th
     "dominant_themes": ["Theme 1", "Theme 2"],
     "trade_history_summary": "Concise summary of ALL trades the user has taken on this pair across all seasons — which episodes they entered, exited, won, lost. This is the trader's personal journey within the story."
   },
-  "is_season_finale": true | false
+  "is_season_finale": true | false,
+  "position_guidance": {
+    "action": "enter_long" | "enter_short" | "hold" | "adjust" | "close" | "wait",
+    "confidence": 0.0-1.0,
+    "reasoning": "2-3 sentences explaining why this action is recommended",
+    "entry_price": 1.2345,
+    "stop_loss": 1.2300,
+    "take_profit_1": 1.2500,
+    "take_profit_2": 1.2600,
+    "take_profit_3": 1.2700,
+    "move_stop_to": 1.2380,
+    "partial_close_percent": 50,
+    "new_take_profit": 1.2650,
+    "close_reason": "Why closing the position",
+    "suggested_lots": 0.15,
+    "risk_percent": 1.5,
+    "risk_amount": 150.00,
+    "favored_scenario_id": "scenario_a"
+  }
 }
 
 IMPORTANT RULES:
@@ -307,6 +340,41 @@ SCENARIO LEVEL RULES (STRICT — for monitoring bot):
 - For a BEARISH scenario: trigger_direction MUST be "below" and invalidation_direction MUST be "above"
 - Trigger and invalidation levels must be on OPPOSITE sides of the current price (${data.currentPrice.toFixed(5)})
 - These levels must come from key_levels or the Gemini/DeepSeek analysis — never invented
+
+POSITION GUIDANCE RULES (MANDATORY):
+- Every episode MUST include a position_guidance object
+- If no existing position is active: recommend 'enter_long', 'enter_short', or 'wait'
+- If an existing position is active (see ACTIVE STORY POSITION section above): recommend 'hold', 'adjust', or 'close'
+- 'wait' = conditions not right, tell trader what to watch for in reasoning
+- 'enter_long' or 'enter_short' MUST include entry_price, stop_loss, take_profit_1, suggested_lots, risk_percent, risk_amount
+- 'adjust' MUST include at least one of: move_stop_to, partial_close_percent, new_take_profit
+- 'close' MUST include close_reason
+- favored_scenario_id must match one of the 2 scenario IDs ("scenario_a" or "scenario_b")
+- entry/SL/TP must come from key_levels or Gemini/DeepSeek analysis — no invented levels
+- If confidence < 0.5, default to 'wait' unless an active position needs urgent management
+- Only include fields relevant to the action (e.g., don't include entry_price for 'hold')
+
+POSITION SIZING RULES (when entering):
+- Use the RISK MANAGEMENT & ACCOUNT CONTEXT section (if present) to calculate position size
+- suggested_lots = (account_balance * risk_percent / 100) / (SL_distance_in_pips * pip_value_per_lot)
+- For most pairs, 1 standard lot = 100,000 units, pip value ≈ $10 per pip
+- NEVER exceed max_position_size from risk rules
+- NEVER exceed max_risk_per_trade % from risk rules
+- If account balance is unknown, use risk_percent only (let the trader calculate lots)
+- risk_percent should typically be 1-2% per trade — NEVER more than the max_risk_per_trade rule
+
+TRADER PSYCHOLOGY & POSITION MANAGEMENT RULES (CRITICAL):
+- You must think like the 1% of traders who are consistently profitable
+- LET PROFITS RUN: Do NOT close winning positions too early out of fear. Move SL to breakeven/profit instead
+- CUT LOSSES QUICKLY: If the trade thesis is invalidated, close immediately. Don't hope for recovery
+- NO REVENGE TRADING: After a loss, do NOT recommend entering immediately. Wait for a proper setup
+- SCALE OUT, NOT ALL-IN: Use multiple TPs (TP1, TP2, TP3). Close partial at TP1 to lock profit, let the rest run
+- MOVE SL TO BREAKEVEN after TP1 is hit — this makes the remaining position a "free trade"
+- RESPECT THE SCENARIOS: If the favored scenario is getting invalidated (price approaching invalidation_level), recommend closing or tightening SL — don't hold and hope
+- ACCOUNT PROTECTION: If the trader has open losing trades or is near max_daily_loss, be CONSERVATIVE. Recommend 'wait' or reduce position size
+- DON'T BE AFRAID: If the setup is clear and all conditions align (technical + fundamental + scenarios), have the confidence to recommend entry. Sitting out forever is also a losing strategy
+- DRAWDOWN AWARENESS: If unrealized P&L is significantly negative, factor this into position sizing and confidence
+- TRAILING STOPS: For strong trends, recommend moving SL behind structure (swing lows for longs, swing highs for shorts) rather than using fixed levels
 
 INTELLIGENCE INTEGRATION RULES:
 - You are BOTH a technical analyst AND an economist/fundamentalist
@@ -366,7 +434,9 @@ export function buildStoryNarratorPromptCached(
     flaggedLevels?: Array<{ level: number; source: string; reason: string }>,
     seasonArchive?: SeasonSummary[],
     forceSeasonFinale?: boolean,
-    latestScenarioAnalysis?: string | null
+    latestScenarioAnalysis?: string | null,
+    activePosition?: ActivePositionContext | null,
+    riskContext?: string | null
 ): { cacheablePrefix: string; dynamicPrompt: string } {
     // Get the full prompt and split it
     const fullPrompt = buildStoryNarratorPrompt(
@@ -374,7 +444,9 @@ export function buildStoryNarratorPromptCached(
         lastEpisode, bible, resolvedScenarios,
         agentIntelligence, flaggedLevels,
         seasonArchive, forceSeasonFinale,
-        latestScenarioAnalysis
+        latestScenarioAnalysis,
+        activePosition,
+        riskContext
     )
 
     // Split at "## CURRENT DATA" — everything before is relatively stable (identity + Bible + rules)
@@ -471,4 +543,41 @@ Report unavailable today.`)
     }
 
     return sections.join('\n\n')
+}
+
+/**
+ * Build the active position context block injected into the narrator prompt.
+ */
+function buildActivePositionBlock(
+    ctx: ActivePositionContext,
+    currentPrice: number
+): string {
+    const { position, adjustments } = ctx
+    const dir = position.direction.toUpperCase()
+    const entryPrice = position.entry_price ?? position.suggested_entry
+    const pnlPips = position.direction === 'long'
+        ? currentPrice - entryPrice
+        : entryPrice - currentPrice
+    // Rough pip conversion (works for most pairs)
+    const pnlDisplay = (pnlPips * 10000).toFixed(1)
+
+    const adjustmentLog = adjustments.length > 0
+        ? adjustments.map(a =>
+            `- S${position.season_number}E${a.episode_number}: ${a.action.toUpperCase()}${a.ai_reasoning ? ` — ${a.ai_reasoning}` : ''}`
+        ).join('\n')
+        : 'No adjustments yet.'
+
+    return `## ACTIVE STORY POSITION
+Direction: ${dir}
+Status: ${position.status}
+Opened: S${position.season_number}E${position.entry_episode_number || '?'} at ${entryPrice}
+Current SL: ${position.current_stop_loss ?? 'Not set'}${position.current_stop_loss !== position.original_stop_loss ? ` (originally ${position.original_stop_loss})` : ''}
+Current TP1: ${position.current_take_profit_1 ?? 'Not set'}${position.current_take_profit_2 ? ` | TP2: ${position.current_take_profit_2}` : ''}${position.current_take_profit_3 ? ` | TP3: ${position.current_take_profit_3}` : ''}
+Unrealized P&L: ${Number(pnlDisplay) >= 0 ? '+' : ''}${pnlDisplay} pips
+Holding since: ${adjustments.length} episode(s)
+
+### Adjustment History
+${adjustmentLog}
+
+TASK: Consider this active position in your guidance. Should the trader hold, adjust (move SL/TP), take partial profits, or close? Your position_guidance.action must account for this existing position.`
 }

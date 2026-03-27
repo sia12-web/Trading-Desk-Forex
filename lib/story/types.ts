@@ -65,6 +65,32 @@ export interface LiquidityZone {
     swept: boolean
 }
 
+// ── Position Guidance (AI-guided trading across episodes) ──
+
+export interface PositionGuidance {
+    action: 'enter_long' | 'enter_short' | 'hold' | 'adjust' | 'close' | 'wait'
+    confidence: number  // 0-1, how confident in this recommendation
+    reasoning: string   // 2-3 sentences explaining why
+    // Entry details (when action is enter_long/enter_short)
+    entry_price?: number
+    stop_loss?: number
+    take_profit_1?: number
+    take_profit_2?: number
+    take_profit_3?: number
+    // Adjustment details (when action is adjust)
+    move_stop_to?: number
+    partial_close_percent?: number  // e.g. 50 = close 50%
+    new_take_profit?: number
+    // Close details (when action is close)
+    close_reason?: string
+    // Position sizing (when action is enter_long/enter_short)
+    suggested_lots?: number       // calculated lot size based on risk rules
+    risk_percent?: number         // % of account risked (e.g. 1.5)
+    risk_amount?: number          // $ amount risked
+    // Scenario alignment
+    favored_scenario_id?: string  // which scenario this aligns with
+}
+
 // ── Story Output (from AI pipeline) ──
 
 export interface CharacterAnalysis {
@@ -116,6 +142,7 @@ export interface StoryResult {
         trade_history_summary: string // Recap of trades, positions, and their outcomes
     }
     is_season_finale: boolean // AI decides if the current narrative arc/season should end
+    position_guidance: PositionGuidance
 }
 
 // ── News Context ──

@@ -32,30 +32,16 @@ export async function POST() {
             'trade_strategies',
             'trades',
             'trade_sync_log',
+            'execution_log',
 
-            // Daily Trading Companion
-            'daily_tasks',
-            'daily_plans',
-            'push_subscriptions',
+            // AI Story
+            'story_episodes',
+            'story_scenarios',
+            'pair_subscriptions',
+            'story_agent_reports',
 
-            // AI Coaching & Analysis
-            'ai_coaching_sessions',
-            'coaching_memory',
-            'behavioral_analysis',
-
-            // Technical Analysis
-            'wave_analysis',
-            'technical_analyses',
-            'candle_analysis',
-            // 'indicator_optimizations', // KEEP: Expensive to recalculate, market-based not performance-based
-
-            // Risk & Strategy
-            'risk_rules',
-            'strategy_templates',
-
-            // Keep preferences but could optionally reset:
-            // 'trader_profile',
-            // 'notification_preferences'
+            // Optimizations
+            'indicator_optimizations'
         ]
 
         // Save reset timestamp BEFORE deleting (in case trader_profile gets cleared)

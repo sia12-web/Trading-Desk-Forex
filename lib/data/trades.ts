@@ -304,22 +304,6 @@ export async function deleteTrade(id: string) {
 
     if (execLogError) throw execLogError
 
-    // ai_coaching_sessions records
-    const { error: coachingError } = await supabase
-        .from('ai_coaching_sessions')
-        .delete()
-        .eq('trade_id', id)
-
-    if (coachingError) throw coachingError
-
-    // wave_analysis records - set trade_id to null (can exist independently)
-    const { error: waveError } = await supabase
-        .from('wave_analysis')
-        .update({ trade_id: null })
-        .eq('trade_id', id)
-
-    if (waveError) throw waveError
-
     // Finally delete the trade (CASCADE will handle screenshots, strategies, and pnl)
     const { error } = await supabase.from('trades').delete().eq('id', id)
     if (error) throw error

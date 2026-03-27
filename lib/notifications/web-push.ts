@@ -5,8 +5,18 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || ''
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || ''
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@tradedesk.app'
 
+// Initialize VAPID details if keys are present
+// Use try-catch to prevent build failures if keys are invalid/corrupt
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+    try {
+        // Remove potential quotes or whitespace that might be in the environment string
+        const cleanPublicKey = VAPID_PUBLIC_KEY.replace(/['"]/g, '').trim()
+        const cleanPrivateKey = VAPID_PRIVATE_KEY.replace(/['"]/g, '').trim()
+        
+        webpush.setVapidDetails(VAPID_SUBJECT, cleanPublicKey, cleanPrivateKey)
+    } catch (error: any) {
+        console.error('Failed to set VAPID details (Push notifications disabled):', error.message)
+    }
 }
 
 export interface PushPayload {

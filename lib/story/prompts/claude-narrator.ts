@@ -146,20 +146,32 @@ ${resolvedScenarios.map(s =>
     // ── Trades block (with season/episode linkage) ──
     const trades = data.recent_trades || []
     const tradesBlock = trades.length > 0
-        ? `## RECENT TRADES (OANDA Journal — with Story Context)
-The trader has been active in this pair:
+        ? `## RECENT JOURNAL TRADES (Planned + Finished)
+The trader's trade journal contains these recent entries for ${data.pair}:
 ${trades.map(t => {
     const episodeRef = t.story_season_number && t.episode_number
-        ? ` (opened in S${t.story_season_number}E${t.episode_number}${t.episode_title ? ` "${t.episode_title}"` : ''})`
+        ? ` (linked to S${t.story_season_number}E${t.episode_number}${t.episode_title ? ` "${t.episode_title}"` : ''})`
         : ''
-    return `- **${t.direction.toUpperCase()}** at ${t.entry_price} (${t.status})${episodeRef} — SL: ${t.stop_loss || 'None'}, TP: ${t.take_profit || 'None'}${t.closed_at ? `. CLOSED at ${t.exit_price}` : '. POSITION ACTIVE.'}`
+    const statusLabel = t.status === 'planned' ? 'PLANNED (not opened yet)' : `CLOSED at ${t.exit_price}`
+    return `- **${t.direction.toUpperCase()}** entry: ${t.entry_price}, status: ${statusLabel}${episodeRef}, SL: ${t.stop_loss || 'None'}, TP: ${t.take_profit || 'None'}`
 }).join('\n')}
 
-**TASK**: Reference these trades in your story. If a trade has season/episode context, acknowledge WHEN in the story it was opened. Did the trader follow the scenario? Was the position successful? Active positions create narrative tension.`
-        : 'No recent trades recorded for this pair.'
+**IMPORTANT DISTINCTION**:
+- These are journal entries (planned trades = future intent, closed trades = past results)
+- These are NOT currently active positions on OANDA
+- Active positions (if any) are shown in the "ACTIVE STORY POSITION" section below
+- Do NOT confuse planned journal trades with open OANDA positions
+
+**TASK**: Reference these journal trades when relevant. If a trade has season/episode context, acknowledge the connection. Did the trader follow through on a planned trade? Did a closed trade align with the scenario?`
+        : 'No recent journal trades for this pair.'
 
     // ── Active position block ──
-    const activePositionBlock = activePosition ? buildActivePositionBlock(activePosition, data.currentPrice) : ''
+    const activePositionBlock = activePosition
+        ? buildActivePositionBlock(activePosition, data.currentPrice)
+        : `## ACTIVE STORY POSITION (OANDA Live Position)
+**No active OANDA position for ${data.pair}.**
+
+The trader is currently FLAT (no open position on OANDA). Any planned trades are in the journal (see above), but nothing is currently live.`
 
     // ── Force finale nudge ──
     const forceFinaleBlock = forceSeasonFinale
@@ -642,7 +654,9 @@ function buildActivePositionBlock(
         ).join('\n')
         : 'No adjustments yet.'
 
-    return `## ACTIVE STORY POSITION
+    return `## ACTIVE STORY POSITION (OANDA Live Position)
+**CRITICAL**: This is the trader's ONLY active position on OANDA for ${position.pair}. Do NOT confuse this with journal entries.
+
 Direction: ${dir}
 Status: ${position.status}
 Opened: S${position.season_number}E${position.entry_episode_number || '?'} at ${entryPrice}
@@ -654,5 +668,11 @@ Holding since: ${adjustments.length} episode(s)
 ### Adjustment History
 ${adjustmentLog}
 
-TASK: Consider this active position in your guidance. Should the trader hold, adjust (move SL/TP), take partial profits, or close? Your position_guidance.action must account for this existing position.`
+**TASK**: Your position_guidance must address THIS active OANDA position. Should the trader:
+- **Hold** — keep current SL/TP unchanged
+- **Adjust** — move SL (trail or tighten) or adjust TP levels
+- **Scale** — add to the winner if criteria met (6 rules apply)
+- **Close** — exit entirely if invalidated or target hit
+
+This is real money at risk. Be precise and actionable.`
 }

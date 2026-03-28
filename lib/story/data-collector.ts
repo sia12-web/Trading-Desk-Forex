@@ -39,6 +39,7 @@ export async function collectStoryData(
     const supabase = client || await createClient()
 
     // Fetch current price + trades (with episode linkage) and candles in parallel
+    // NOTE: Only fetch PLANNED and CLOSED trades from journal — active positions come from Story Position Tracker
     const [{ data: prices }, { data: tradesRaw }] = await Promise.all([
         getCurrentPrices([instrument]),
         supabase
@@ -46,6 +47,7 @@ export async function collectStoryData(
             .select('direction, status, entry_price, exit_price, stop_loss, take_profit, closed_at, story_season_number, story_episode_id')
             .eq('user_id', userId)
             .eq('pair', pair)
+            .in('status', ['planned', 'closed']) // Exclude 'open' — active positions tracked separately
             .order('created_at', { ascending: false })
             .limit(10) // last 10 activities
     ])

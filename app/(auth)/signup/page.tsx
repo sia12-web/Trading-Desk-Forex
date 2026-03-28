@@ -61,13 +61,13 @@ export default function SignupPage() {
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="w-16 h-16 rounded-2xl bg-neutral-800/50 p-2 mb-6 mx-auto flex items-center justify-center border border-neutral-700/50 shadow-xl shadow-blue-500/10 transition-transform hover:rotate-3 hover:scale-110 duration-500 relative z-10">
-                    <img src="/logo.png" alt="TradeDesk Logo" className="w-full h-full object-contain rounded-xl" />
+                    <img src="/logo.png" alt="TradeDesk Forex Logo" className="w-full h-full object-contain rounded-xl" />
                 </div>
 
                 <h1 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent relative z-10">
                     Create Account
                 </h1>
-                <p className="text-neutral-400 text-center mb-8">Join TradeDesk today</p>
+                <p className="text-neutral-400 text-center mb-8">Join TradeDesk Forex today</p>
 
                 <form onSubmit={handleSignup} className="space-y-6">
                     <div>

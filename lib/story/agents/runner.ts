@@ -3,6 +3,7 @@ import { getTodayReportTypes } from './data'
 import { runIndicatorOptimizer } from './indicator-optimizer'
 import { runNewsIntelligence } from './news-intelligence'
 import { runCrossMarketAnalysis } from './cross-market'
+import { runCMSIntelligence } from './cms-intelligence'
 import type { AgentIntelligence } from './types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -21,10 +22,11 @@ export async function runAgentsForPair(
     const needsOptimizer = !completedTypes.includes('indicator_optimizer')
     const needsNews = !completedTypes.includes('news_intelligence')
     const needsCrossMarket = !completedTypes.includes('cross_market')
+    const needsCMS = !completedTypes.includes('cms_intelligence')
 
-    if (!needsOptimizer && !needsNews && !needsCrossMarket) {
+    if (!needsOptimizer && !needsNews && !needsCrossMarket && !needsCMS) {
         console.log(`All agents already ran today for ${userId}/${pair}`)
-        return { optimizer: null, news: null, crossMarket: null, generatedAt: new Date().toISOString() }
+        return { optimizer: null, news: null, crossMarket: null, cms: null, generatedAt: new Date().toISOString() }
     }
 
     // Collect story data (shared with optimizer agent, avoids duplicate OANDA calls)
@@ -35,6 +37,7 @@ export async function runAgentsForPair(
         optimizer: null,
         news: null,
         crossMarket: null,
+        cms: null,
         generatedAt: new Date().toISOString(),
     }
 
@@ -62,6 +65,15 @@ export async function runAgentsForPair(
             results.crossMarket = await runCrossMarketAnalysis(pair, userId, client)
         } catch (error) {
             console.error(`Cross-market agent error for ${pair}:`, error instanceof Error ? error.message : error)
+        }
+    }
+
+    // Agent 4: CMS Intelligence (Programmatic) — conditional market patterns
+    if (needsCMS) {
+        try {
+            results.cms = await runCMSIntelligence(pair, userId, client)
+        } catch (error) {
+            console.error(`CMS agent error for ${pair}:`, error instanceof Error ? error.message : error)
         }
     }
 

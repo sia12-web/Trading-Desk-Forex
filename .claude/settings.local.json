@@ -70,7 +70,10 @@
       "mcp__railway-mcp-server__list-services",
       "mcp__railway-mcp-server__list-variables",
       "mcp__railway-mcp-server__set-variables",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(echo:*)",
+      "Bash(npm config get:*)",
+      "Bash(git remote set-url:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

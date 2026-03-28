@@ -136,6 +136,8 @@ export async function collectStoryData(
         liquidityZones,
         volatilityStatus,
         atr14,
+        atr50,
+        atrRatio: ratio,
         recent_trades: trades,
         collectedAt: new Date().toISOString(),
     }

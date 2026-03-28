@@ -29,8 +29,8 @@ export async function sendTelegramMessage(
     // Format message with title, body, and optional link
     let message = `*${title}*\n\n${body}`
     if (url) {
-        const fullUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://tradedesk.app'}${url}`
-        message += `\n\n👉 [Open in Trade Desk](${fullUrl})`
+        const fullUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://tradedesk-forex.app'}${url}`
+        message += `\n\n👉 [Open in TradeDesk Forex](${fullUrl})`
     }
 
     try {

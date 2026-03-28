@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const days = parseInt(req.nextUrl.searchParams.get('days') || '30', 10)
+    const days = Math.max(1, Math.min(365, parseInt(req.nextUrl.searchParams.get('days') || '30', 10) || 30))
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
     const client = await createClient()

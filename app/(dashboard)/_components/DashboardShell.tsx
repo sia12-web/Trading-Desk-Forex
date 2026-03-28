@@ -68,14 +68,14 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
                 <div className={`p-6 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                     <LinkNext href="/" className={`flex items-center gap-3 group ${isCollapsed ? 'hidden' : 'flex'}`}>
                         <div className="w-9 h-9 rounded-xl bg-neutral-800/50 p-1 flex items-center justify-center shadow-lg shadow-blue-500/10 group-hover:scale-105 transition-transform shrink-0 border border-neutral-700/50">
-                            <img src="/logo.png" alt="TradeDesk Logo" className="w-full h-full object-contain rounded-lg" />
+                            <img src="/logo.png" alt="TradeDesk Forex Logo" className="w-full h-full object-contain rounded-lg" />
                         </div>
-                        {!isCollapsed && <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">TradeDesk</span>}
+                        {!isCollapsed && <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">TradeDesk Forex</span>}
                     </LinkNext>
 
                     {isCollapsed && (
                         <div className="w-10 h-10 rounded-xl bg-neutral-800/50 p-1.5 flex items-center justify-center shadow-lg shadow-blue-500/10 mb-2 border border-neutral-700/50 hover:scale-105 transition-transform cursor-pointer" onClick={() => setIsCollapsed(false)}>
-                            <img src="/logo.png" alt="TradeDesk" className="w-full h-full object-contain rounded-lg" />
+                            <img src="/logo.png" alt="TradeDesk Forex" className="w-full h-full object-contain rounded-lg" />
                         </div>
                     )}
 

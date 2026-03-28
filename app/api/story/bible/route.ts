@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getBible } from '@/lib/story/bible'
+import { isValidPair } from '@/lib/utils/valid-pairs'
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const pair = searchParams.get('pair')
 
-    if (!pair) {
-        return NextResponse.json({ error: 'Pair is required' }, { status: 400 })
+    if (!pair || !isValidPair(pair)) {
+        return NextResponse.json({ error: 'Invalid pair' }, { status: 400 })
     }
 
     try {

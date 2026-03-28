@@ -39,7 +39,7 @@ async function oandaFetch<T>(
                 headers: {
                     'Authorization': `Bearer ${cfg.apiKey}`,
                     'Content-Type': 'application/json',
-                    'User-Agent': 'TradeDesk/1.0.0', // Added User-Agent
+                    'User-Agent': 'TradeDesk-Forex/1.0.0', // Added User-Agent
                     ...options.headers,
                 },
                 signal: controller.signal

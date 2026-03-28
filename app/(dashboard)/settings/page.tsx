@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Settings, Shield, Globe, RefreshCw, Key, CreditCard, ChevronRight, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Target, CheckSquare, Brain, Sparkles, Cpu, Timer } from 'lucide-react'
+import { Settings, Shield, Globe, RefreshCw, Key, CreditCard, ChevronRight, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Target, CheckSquare, Brain, Sparkles, Cpu, Timer, RotateCcw } from 'lucide-react'
 
 interface ConnectionResult {
     connected: boolean
@@ -64,6 +64,11 @@ export default function SettingsPage() {
     // Cron Jobs state
     const [cronResults, setCronResults] = useState<any>(null)
     const [cronLoading, setCronLoading] = useState(false)
+
+    // AI Memory Reset state
+    const [showMemoryResetDialog, setShowMemoryResetDialog] = useState(false)
+    const [memoryResetConfirm, setMemoryResetConfirm] = useState('')
+    const [resettingMemory, setResettingMemory] = useState(false)
 
 
 
@@ -208,6 +213,29 @@ export default function SettingsPage() {
             alert('❌ Local error sending test message')
         } finally {
             setTestingTelegram(false)
+        }
+    }
+
+    const handleResetMemory = async () => {
+        if (memoryResetConfirm !== 'RESET') return
+
+        setResettingMemory(true)
+        try {
+            const res = await fetch('/api/system/reset-memory', { method: 'POST' })
+            const data = await res.json()
+
+            if (res.ok) {
+                alert(`AI memory reset complete. ${data.totalDeleted} records deleted.`)
+                setShowMemoryResetDialog(false)
+                setMemoryResetConfirm('')
+                window.location.reload()
+            } else {
+                alert(`Error: ${data.error}`)
+            }
+        } catch (err) {
+            alert('Failed to reset AI memory')
+        } finally {
+            setResettingMemory(false)
         }
     }
 
@@ -758,6 +786,69 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
+                {/* System Memory Reset — always visible */}
+                <section className="bg-amber-950/20 border-2 border-amber-900/50 rounded-[2.5rem] overflow-hidden">
+                    <div className="p-10 border-b border-amber-900/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-6">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                                <RotateCcw size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold text-amber-400">System Memory</h3>
+                                <p className="text-neutral-500 text-sm mt-1">Reset all AI-generated memory and start fresh.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-10 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="p-5 rounded-2xl bg-amber-950/30 border border-amber-900/30">
+                                <h4 className="text-sm font-bold text-amber-400 mb-3">Will be deleted</h4>
+                                <ul className="text-xs text-neutral-400 space-y-1.5">
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Story episodes, scenarios, bibles, seasons, positions</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Pair subscriptions &amp; intelligence agent reports</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Internal analysis caches &amp; scenario analyses</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> AI coaching sessions &amp; behavioral analysis</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Daily plans &amp; tasks</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Analysis caches &amp; indicator optimizations</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Strategy Lab discoveries, signals &amp; engines</li>
+                                </ul>
+                            </div>
+                            <div className="p-5 rounded-2xl bg-green-950/20 border border-green-900/30">
+                                <h4 className="text-sm font-bold text-green-400 mb-3">Will be preserved</h4>
+                                <ul className="text-xs text-neutral-400 space-y-1.5">
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Trading Gurus notes</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> My Story personal notes</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Trade journal &amp; PnL history</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> OANDA settings &amp; sync logs</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Notification preferences</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Risk rules &amp; calendar events</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Trader profile</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 bg-amber-950/30 rounded-2xl border border-amber-900/30">
+                            <div className="flex-1">
+                                <h4 className="text-lg font-bold text-white mb-2">Reset AI Memory</h4>
+                                <p className="text-sm text-neutral-400 leading-relaxed">
+                                    Wipe all AI-generated data — Story arcs, coaching history, analysis caches, strategy lab — and start completely fresh. Your personal notes and trading history are untouched.
+                                </p>
+                                <div className="mt-3 text-xs text-amber-400/80 font-medium">
+                                    This action cannot be undone
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowMemoryResetDialog(true)}
+                                className="flex items-center gap-2 px-8 py-4 bg-amber-600 hover:bg-amber-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-amber-500/30 transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-amber-900/10"
+                            >
+                                <RotateCcw size={16} />
+                                Reset AI Memory
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Danger Zone - Demo Only */}
                 {isDemo && (
                     <section className="bg-red-950/20 border-2 border-red-900/50 rounded-[2.5rem] overflow-hidden">
@@ -796,6 +887,70 @@ export default function SettingsPage() {
                     </section>
                 )}
             </div>
+
+            {/* Memory Reset Confirmation Dialog */}
+            {showMemoryResetDialog && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-neutral-900 border-2 border-amber-900/50 rounded-3xl max-w-lg w-full p-8 shadow-2xl">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                                <RotateCcw size={24} />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white">Reset AI Memory</h3>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <p className="text-neutral-300 leading-relaxed">
+                                This will permanently delete all AI-generated data:
+                            </p>
+                            <ul className="text-sm text-neutral-400 space-y-2 list-disc list-inside">
+                                <li>Story episodes, scenarios, bibles, seasons &amp; positions</li>
+                                <li>AI coaching sessions &amp; behavioral analysis</li>
+                                <li>Internal analysis caches &amp; scenario analyses</li>
+                                <li>Daily plans &amp; analysis caches</li>
+                                <li>Strategy Lab discoveries, signals &amp; engines</li>
+                            </ul>
+                            <p className="text-xs text-green-400 font-medium pt-2">
+                                Your trading journal, gurus, personal notes, and settings are safe.
+                            </p>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-bold text-neutral-400 mb-2">
+                                Type <span className="text-amber-400">RESET</span> to confirm:
+                            </label>
+                            <input
+                                type="text"
+                                value={memoryResetConfirm}
+                                onChange={(e) => setMemoryResetConfirm(e.target.value)}
+                                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white font-mono focus:outline-none focus:border-amber-500"
+                                placeholder="Type RESET"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => {
+                                    setShowMemoryResetDialog(false)
+                                    setMemoryResetConfirm('')
+                                }}
+                                className="flex-1 px-8 py-4 bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-neutral-700/50 transition-all active:scale-95"
+                                disabled={resettingMemory}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleResetMemory}
+                                disabled={memoryResetConfirm !== 'RESET' || resettingMemory}
+                                className="flex-1 px-8 py-4 bg-amber-600 hover:bg-amber-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-amber-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-900/10"
+                            >
+                                {resettingMemory ? 'Resetting...' : 'Reset AI Memory'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Reset Confirmation Dialog */}
             {showResetDialog && (

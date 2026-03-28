@@ -3,11 +3,7 @@ import { getAuthUser, createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/ai/rate-limiter'
 import { collectStoryData } from '@/lib/story/data-collector'
 import { runIndicatorOptimizer } from '@/lib/story/agents/indicator-optimizer'
-
-const VALID_PAIRS = [
-    'EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/GBP', 'AUD/USD',
-    'USD/CAD', 'NZD/USD', 'EUR/JPY', 'USD/CHF', 'GBP/JPY',
-]
+import { isValidPair } from '@/lib/utils/valid-pairs'
 
 export async function GET(req: NextRequest) {
     const user = await getAuthUser()
@@ -16,7 +12,7 @@ export async function GET(req: NextRequest) {
     }
 
     const pair = req.nextUrl.searchParams.get('pair')
-    if (!pair || !VALID_PAIRS.includes(pair)) {
+    if (!pair || !isValidPair(pair)) {
         return NextResponse.json({ error: 'Invalid pair' }, { status: 400 })
     }
 
@@ -59,12 +55,12 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const pair = body.pair as string
-    if (!pair || !VALID_PAIRS.includes(pair)) {
+    if (!pair || !isValidPair(pair)) {
         return NextResponse.json({ error: 'Invalid pair' }, { status: 400 })
     }
 
     // Rate limit (shared 5/hr pool)
-    const limit = checkRateLimit(user.id)
+    const limit = await checkRateLimit(user.id)
     if (!limit.allowed) {
         const minutes = Math.ceil(limit.resetIn / 60_000)
         return NextResponse.json(

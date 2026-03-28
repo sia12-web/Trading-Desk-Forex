@@ -28,9 +28,12 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const user = await getAuthUser()
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const { id } = await params
     const { narrative } = await req.json()
     const { updateEpisodeNarrative } = await import('@/lib/data/stories')
-    await updateEpisodeNarrative(id, user!.id, narrative)
+    await updateEpisodeNarrative(id, user.id, narrative)
     return NextResponse.json({ success: true })
 }

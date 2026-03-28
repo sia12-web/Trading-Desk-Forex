@@ -71,9 +71,25 @@ export interface CrossMarketReport {
     summary: string
 }
 
+export interface CMSIntelligenceReport {
+    pair: string
+    total_conditions: number
+    top_conditions: Array<{
+        condition: string
+        outcome: string
+        probability: number
+        sample_size: number
+        avg_move_pips: number
+        category: string
+    }>
+    market_personality: string
+    data_range: { from: string; to: string }
+}
+
 export interface AgentIntelligence {
     optimizer: IndicatorOptimizerReport | null
     news: NewsIntelligenceReport | null
     crossMarket: CrossMarketReport | null
+    cms: CMSIntelligenceReport | null
     generatedAt: string
 }

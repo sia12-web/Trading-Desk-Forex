@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/supabase/server'
 import { createClient } from '@/lib/supabase/server'
+import { isValidPair } from '@/lib/utils/valid-pairs'
 
 /**
  * GET /api/story/my-story?pair=EUR_USD
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const pair = req.nextUrl.searchParams.get('pair')
-    if (!pair) return NextResponse.json({ error: 'Missing pair' }, { status: 400 })
+    if (!pair || !isValidPair(pair)) return NextResponse.json({ error: 'Invalid pair' }, { status: 400 })
 
     const supabase = await createClient()
     const { data, error } = await supabase
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { pair, content } = body
 
-    if (!pair) return NextResponse.json({ error: 'Missing pair' }, { status: 400 })
+    if (!pair || !isValidPair(pair)) return NextResponse.json({ error: 'Invalid pair' }, { status: 400 })
 
     const supabase = await createClient()
     const { error } = await supabase

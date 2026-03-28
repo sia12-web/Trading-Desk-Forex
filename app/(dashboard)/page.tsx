@@ -17,7 +17,7 @@ export default async function DashboardPage() {
     if (!user) return null
 
     const stats = await getDashboardStats(user.id)
-    const recentTrades = await listTrades({ status: [] })
+    const recentTrades = await listTrades({ status: ['open', 'closed'] })
     const top5 = recentTrades.slice(0, 5)
 
     const getStatusColor = (status: string) => {

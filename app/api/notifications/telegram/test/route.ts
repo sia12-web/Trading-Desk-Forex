@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         const result = await sendTelegramMessage(
             chatId,
             '🎯 Connection Success',
-            'Your Telegram account is now successfully connected to Trade Desk! 🎯'
+            'Your Telegram account is now successfully connected to TradeDesk Forex! 🎯'
         )
 
         if (!result.success) {

@@ -3,11 +3,7 @@ import { getAuthUser } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/ai/rate-limiter'
 import { createTask } from '@/lib/background-tasks/manager'
 import { generateStory } from '@/lib/story/pipeline'
-
-const VALID_PAIRS = [
-    'EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/GBP', 'AUD/USD',
-    'USD/CAD', 'NZD/USD', 'EUR/JPY', 'USD/CHF', 'GBP/JPY',
-]
+import { isValidPair } from '@/lib/utils/valid-pairs'
 
 export async function POST(req: NextRequest) {
     const user = await getAuthUser()
@@ -18,12 +14,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const pair = body.pair as string
 
-    if (!pair || !VALID_PAIRS.includes(pair)) {
+    if (!pair || !isValidPair(pair)) {
         return NextResponse.json({ error: 'Invalid pair' }, { status: 400 })
     }
 
     // Rate limit check
-    const limit = checkRateLimit(user.id)
+    const limit = await checkRateLimit(user.id)
     if (!limit.allowed) {
         const minutes = Math.ceil(limit.resetIn / 60_000)
         return NextResponse.json(

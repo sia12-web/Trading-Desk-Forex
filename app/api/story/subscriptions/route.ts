@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/supabase/server'
 import { getSubscribedPairs, subscribeToPair, unsubscribePair } from '@/lib/data/stories'
-
-const VALID_PAIRS = [
-    'EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/GBP', 'AUD/USD',
-    'USD/CAD', 'NZD/USD', 'EUR/JPY', 'USD/CHF', 'GBP/JPY',
-]
+import { isValidPair } from '@/lib/utils/valid-pairs'
 
 export async function GET() {
     const user = await getAuthUser()
@@ -26,7 +22,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const pair = body.pair as string
 
-    if (!pair || !VALID_PAIRS.includes(pair)) {
+    if (!pair || !isValidPair(pair)) {
         return NextResponse.json({ error: 'Invalid pair' }, { status: 400 })
     }
 

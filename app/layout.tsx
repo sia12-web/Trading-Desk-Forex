@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TradeDesk | Professional Trading Journal",
+  title: "TradeDesk Forex | Professional Trading Journal",
   description: "Precision trading journal and institutional-grade risk management companion for technical analysts.",
 };
 

@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PAIR_KNOWLEDGE } from '@/lib/utils/pair-knowledge'
 import { getMarketSessions } from '@/lib/utils/market-sessions'
 import { getOpenTrades } from '@/lib/oanda/client'
+import { getAuthUser } from '@/lib/supabase/server'
+import { isValidPair } from '@/lib/utils/valid-pairs'
 
 export async function GET(request: NextRequest) {
+    const user = await getAuthUser()
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const pairQuery = searchParams.get('pair')
 
@@ -13,6 +20,10 @@ export async function GET(request: NextRequest) {
 
     // Convert from EUR_USD to EUR/USD if needed
     const pair = pairQuery.replace('_', '/')
+
+    if (!isValidPair(pair)) {
+        return NextResponse.json({ error: 'Invalid pair' }, { status: 400 })
+    }
     const knowledge = PAIR_KNOWLEDGE[pair]
 
     if (!knowledge) {

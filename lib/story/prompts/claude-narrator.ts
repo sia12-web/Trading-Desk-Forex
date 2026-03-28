@@ -210,7 +210,8 @@ ${flaggedLevels.map(f => `- ${f.level} (${f.source}): ${f.reason}`).join('\n')}
 ` : ''}
 ### Market Context
 - Current Price: ${data.currentPrice.toFixed(5)}
-- Volatility: ${data.volatilityStatus} (ATR14: ${data.atr14.toFixed(1)} pips)
+- **Volatility Regime**: ${data.volatilityStatus.toUpperCase()} — ATR14: ${data.atr14.toFixed(1)} pips, ATR50: ${data.atr50.toFixed(1)} pips, Ratio: ${data.atrRatio.toFixed(2)}x
+- Volatility Trend: ${data.atrRatio > 1.3 ? '🔥 EXPANDING FAST (ATR14 >> ATR50) — big moves incoming, widen SL/TP' : data.atrRatio > 1.05 ? '📈 Expanding (ATR14 > ATR50) — above-average movement expected' : data.atrRatio < 0.7 ? '🧊 CONTRACTING HARD (ATR14 << ATR50) — compression building, breakout imminent' : data.atrRatio < 0.95 ? '📉 Contracting (ATR14 < ATR50) — below-average movement, tighter ranges' : '⚖️ Stable (ATR14 ≈ ATR50) — normal conditions'}
 - News Sentiment: ${news.sentiment}
 - Key Drivers: ${news.key_drivers.join(', ')}
 - ${news.fundamental_narrative}
@@ -312,6 +313,64 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story. Respond with th
     "favored_scenario_id": "scenario_a"
   }
 }
+
+VOLATILITY DOCTRINE (FOUNDATIONAL — READ FIRST):
+Volatility is the HEARTBEAT of every story you write. Without volatility there is no risk. Without risk there is no profit. Every episode, every scenario, every position recommendation MUST be shaped by the current volatility regime.
+
+Current regime: ${data.volatilityStatus.toUpperCase()} (ATR14: ${data.atr14.toFixed(1)} pips, ATR14/ATR50 ratio: ${data.atrRatio.toFixed(2)}x)
+
+RULES BY VOLATILITY STATE:
+
+IF SPIKE (ratio > 1.5x):
+- Narrative tone: URGENT. The market is alive. This is where fortunes are made and lost.
+- Characters: One side is DOMINANT, the other is being CRUSHED. No "balanced" states in spike volatility.
+- Scenarios: Wider trigger/invalidation levels (use 1.5-2x ATR distance). Faster time-to-play-out.
+- Position guidance: MUST widen stop losses proportionally. Risk per trade DECREASES (smaller lot size) but pip targets INCREASE. This is non-negotiable.
+- Season context: Spike volatility often marks season-defining episodes — major arc turns happen HERE.
+
+IF HOT (ratio > 1.1x):
+- Narrative tone: Energetic. Movement is above average — the story is progressing.
+- Characters: Clear momentum advantage for one side. Push the narrative forward.
+- Scenarios: Standard-to-wide levels. Trends tend to extend.
+- Position guidance: Normal-to-wide SL. Good conditions for trend-following entries.
+
+IF NORMAL (ratio 0.9x-1.1x):
+- Narrative tone: Measured. The market is in rhythm.
+- Characters: Can be balanced. Buildup phases are plausible.
+- Scenarios: Standard level distances. Watch for catalysts that shift the regime.
+- Position guidance: Standard SL/TP based on ATR.
+
+IF COLD (ratio < 0.9x):
+- Narrative tone: Quiet, coiled, WAITING. Describe the tension of compression.
+- Characters: Both sides are ACCUMULATING. Neither is dominant — they are preparing.
+- Scenarios: Tighter levels. Emphasize that a breakout is BUILDING. The longer the compression, the more violent the eventual move.
+- Position guidance: If no position → recommend WAIT or very small size. If holding → tighten SL to protect gains in low-movement environment. This is the calm before the storm — TELL the trader this.
+- CRITICAL: Cold volatility does NOT mean "nothing is happening." It means energy is being stored. Frame it as narrative tension — the audience should feel something big is coming.
+
+IF CONTRACTING HARD (ratio < 0.7x):
+- Narrative tone: SUSPENSE. Maximum tension. The spring is fully compressed.
+- Characters: Frozen standoff. Whoever breaks first will determine the next major arc.
+- Scenarios: Flag that breakout within 1-5 days is statistically likely (reference CMS v4 pattern if available). Both scenarios should describe explosive moves.
+- Position guidance: Recommend WAIT with specific trigger levels for entry. When it breaks, it will be FAST. Prepare the trader mentally.
+- Season context: Compression episodes often precede season finales — the resolved tension drives the next arc.
+
+VOLATILITY IN NARRATIVE (MANDATORY):
+- EVERY episode narrative must mention the volatility state in at least one paragraph
+- Use volatility metaphors: "The market is holding its breath" (cold), "Sellers are swinging haymakers" (spike), "The pulse of the market is quickening" (hot → spike transition)
+- When volatility CHANGES between episodes, this IS the story. A shift from cold → hot is more narratively important than a 50-pip move in normal conditions
+- Volatility transitions should be treated as CHARACTER MOTIVATION changes — "The sellers, dormant for three episodes, suddenly found their voice as volatility exploded"
+
+VOLATILITY IN POSITION GUIDANCE (MANDATORY):
+- stop_loss distance MUST scale with ATR. Minimum SL = 0.8x ATR14. In spike: minimum 1.2x ATR14.
+- take_profit targets MUST scale with ATR. Minimum TP1 = 1.0x ATR14.
+- In COLD volatility: reduce suggested_lots by 30-50% (less movement = less opportunity = less risk justified)
+- In SPIKE volatility: reduce suggested_lots by 20-40% (more movement = more risk per pip = compensate with size)
+- NEVER recommend the same lot size across all volatility regimes — that is risk management negligence
+
+VOLATILITY IN SEASONS:
+- A season ENDING often coincides with a volatility regime change (e.g., a 3-month trend ends when volatility spikes and price reverses)
+- A season BEGINNING often starts from compression (cold volatility → new directional move)
+- Reference the volatility arc across the season: "This season began in compression, expanded through the middle episodes, and is now showing signs of exhaustion"
 
 IMPORTANT RULES:
 - The narrative must be engaging but grounded in the data
@@ -472,8 +531,8 @@ export function buildStoryNarratorPromptCached(
 function buildIntelligenceBriefing(intelligence?: AgentIntelligence): string {
     if (!intelligence) return ''
 
-    const { optimizer, news, crossMarket } = intelligence
-    const hasAny = optimizer || news || crossMarket
+    const { optimizer, news, crossMarket, cms } = intelligence
+    const hasAny = optimizer || news || crossMarket || cms
     if (!hasAny) return ''
 
     const sections: string[] = ['## INTELLIGENCE BRIEFING (from Daily Agents)']
@@ -540,6 +599,22 @@ ${crossMarket.divergences.length > 0 ? `Divergences: ${crossMarket.divergences.j
     } else {
         sections.push(`### Cross-Market Effects (Cross-Market Agent)
 Report unavailable today.`)
+    }
+
+    // ── CMS section ──
+    if (cms) {
+        const topPatterns = cms.top_conditions
+            .slice(0, 8)
+            .map(c => `- **${c.condition}** → ${c.outcome} (${c.probability}%, n=${c.sample_size}, avg ${c.avg_move_pips} pips)`)
+            .join('\n')
+
+        sections.push(`### Conditional Market Shape (CMS Agent — PROGRAMMATIC STATISTICS)
+⚠️ These statistics are computed programmatically from ${cms.data_range.from} to ${cms.data_range.to}. They are REAL counts from ${cms.total_conditions} validated patterns, not AI estimates. Use them directly in your scenarios.
+
+Top Conditions:
+${topPatterns}
+
+Market Personality: ${cms.market_personality}`)
     }
 
     return sections.join('\n\n')

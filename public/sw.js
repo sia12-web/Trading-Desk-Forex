@@ -1,4 +1,4 @@
-// Service Worker for Push Notifications - TradeDesk Daily Plan
+// Service Worker for Push Notifications - TradeDesk Forex Daily Plan
 
 self.addEventListener('push', function (event) {
     const data = event.data ? event.data.json() : {}
@@ -17,7 +17,7 @@ self.addEventListener('push', function (event) {
     }
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'TradeDesk', options)
+        self.registration.showNotification(data.title || 'TradeDesk Forex', options)
     )
 })
 

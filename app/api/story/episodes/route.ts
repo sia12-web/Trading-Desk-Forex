@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/supabase/server'
 import { getEpisodes } from '@/lib/data/stories'
+import { isValidPair } from '@/lib/utils/valid-pairs'
 
 export async function GET(req: NextRequest) {
     const user = await getAuthUser()
@@ -10,11 +11,11 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const pair = searchParams.get('pair')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '20') || 20))
+    const offset = Math.max(0, parseInt(searchParams.get('offset') || '0') || 0)
 
-    if (!pair) {
-        return NextResponse.json({ error: 'pair is required' }, { status: 400 })
+    if (!pair || !isValidPair(pair)) {
+        return NextResponse.json({ error: 'Invalid pair' }, { status: 400 })
     }
 
     try {

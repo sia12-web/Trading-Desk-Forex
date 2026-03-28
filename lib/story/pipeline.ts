@@ -71,8 +71,8 @@ export async function generateStory(
         console.log(`${TAG} [Agents] Loading cached intelligence...`)
         await updateProgress(taskId, 22, 'Loading agent intelligence reports...', client)
         const agentIntelligence = await getAgentReportsForPair(userId, pair, client)
-        const agentCount = [agentIntelligence.optimizer, agentIntelligence.news, agentIntelligence.crossMarket].filter(Boolean).length
-        console.log(`${TAG} [Agents] ${agentCount}/3 reports available`)
+        const agentCount = [agentIntelligence.optimizer, agentIntelligence.news, agentIntelligence.crossMarket, agentIntelligence.cms].filter(Boolean).length
+        console.log(`${TAG} [Agents] ${agentCount}/4 reports available`)
 
         // ── Step 2.7: Fetch risk rules + account balance ──
         console.log(`${TAG} [Risk] Loading risk rules + OANDA account balance...`)
@@ -268,6 +268,7 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
         if (agentIntelligence.optimizer) agentReportsSnapshot.optimizer = { summary: agentIntelligence.optimizer.summary, market_regime: agentIntelligence.optimizer.market_regime }
         if (agentIntelligence.news) agentReportsSnapshot.news = { summary: agentIntelligence.news.summary, sentiment: agentIntelligence.news.sentiment_indicators?.overall }
         if (agentIntelligence.crossMarket) agentReportsSnapshot.crossMarket = { summary: agentIntelligence.crossMarket.summary, risk_appetite: agentIntelligence.crossMarket.risk_appetite }
+        if (agentIntelligence.cms) agentReportsSnapshot.cms = { total_conditions: agentIntelligence.cms.total_conditions, market_personality: agentIntelligence.cms.market_personality }
 
         // Season number already computed above before narrator call
         const seasonNumber = nextSeasonNumber

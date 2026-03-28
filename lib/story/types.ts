@@ -30,6 +30,8 @@ export interface StoryDataPayload {
     liquidityZones: LiquidityZone[]
     volatilityStatus: string
     atr14: number
+    atr50: number
+    atrRatio: number  // atr14/atr50 — >1 = expanding, <1 = contracting
     recent_trades?: Array<{
         direction: string
         status: string

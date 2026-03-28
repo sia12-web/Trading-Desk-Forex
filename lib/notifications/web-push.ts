@@ -3,7 +3,7 @@ import webpush from 'web-push'
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || ''
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || ''
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@tradedesk.app'
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@tradedesk-forex.app'
 
 // Initialize VAPID details if keys are present
 // Use try-catch to prevent build failures if keys are invalid/corrupt

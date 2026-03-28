@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
         const { searchParams } = new URL(req.url)
         const pair = searchParams.get('pair') || 'EUR/USD'
-        const hoursAhead = parseInt(searchParams.get('hoursAhead') || '48')
+        const hoursAhead = Math.max(1, Math.min(168, parseInt(searchParams.get('hoursAhead') || '48') || 48))
         
         const cacheKey = `${pair}-${hoursAhead}`
         const cached = newsCache.get(cacheKey)

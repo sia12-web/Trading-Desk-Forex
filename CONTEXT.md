@@ -1,4 +1,4 @@
-# Trade Desk — System Context
+# TradeDesk Forex — System Context
 
 > **Purpose**: Complete reference for every subsystem. Read this before implementing any feature.
 
@@ -39,6 +39,7 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | `/risk-rules` | Risk Rules | Max position, daily loss, drawdown limits |
 | `/strategies` | Strategies | Strategy Lab + PIPO config |
 | `/calendar` | Calendar | Trading calendar with recurring events |
+| `/cms` | CMS Engine | Conditional Market Shaping — programmatic pattern analysis |
 | `/news` | News | Forex Factory + economic calendar |
 | `/references` | References | Candlestick patterns, chart patterns |
 | `/settings` | Settings | OANDA connection, notifications, profile |
@@ -125,6 +126,12 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | GET | `/api/indicator-optimizer` | Optimized indicator params |
 | GET | `/api/news/fetch` | Forex news from external sources |
 | GET | `/api/pairs/info` | Pair metadata (pip size, etc.) |
+
+### CMS (Conditional Market Shaping)
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/cms/generate` | Trigger CMS analysis (background task) |
+| GET | `/api/cms/results?pair=EUR/USD` | Fetch cached CMS results |
 
 ### Cron Jobs (Protected by `CRON_SECRET`, scheduled via Supabase pg_cron + pg_net)
 | Endpoint | Schedule | Purpose |
@@ -233,7 +240,8 @@ The narrative-based forex analysis feature — follow pairs like a TV show.
 | Indicator Optimizer | `lib/story/agents/indicator-optimizer.ts` | DeepSeek | Optimal indicator params per pair/TF |
 | News Intelligence | `lib/story/agents/news-intelligence.ts` | Gemini | Macro/fundamental analysis |
 | Cross-Market Effects | `lib/story/agents/cross-market.ts` | Gemini | Stock index impacts on forex |
-| Runner | `lib/story/agents/runner.ts` | — | Agent orchestration |
+| **CMS Intelligence** | `lib/story/agents/cms-intelligence.ts` | **Programmatic** | **Conditional market patterns (no AI cost)** |
+| Runner | `lib/story/agents/runner.ts` | — | Agent orchestration (runs all 4) |
 | Types | `lib/story/agents/types.ts` | — | Agent type definitions |
 | Data | `lib/story/agents/data.ts` | — | Agent data access |
 
@@ -281,6 +289,105 @@ Auto-generated weekly via cron. Story pipeline consumes the latest analysis as i
 - **Flow**: Gemini (scanner) → DeepSeek (validator) → Claude (synthesizer) → stored in `scenario_analyses` table
 - **Cron**: `scenario-analysis-weekly` — Monday 3:30 AM UTC via `/api/cron/scenario-analysis`
 - **Story integration**: `getLatestScenarioAnalysisForPrompt()` injects institutional context into narrator
+
+---
+
+## CMS Engine V2 (Conditional Market Shaping)
+
+Programmatic statistical pattern engine — discovers "IF → THEN" market behaviors from real candle data.
+
+### Architecture
+
+**Phase 0 (TypeScript — NO AI):**
+- Fetch OANDA candles (Daily, Weekly, H1, H4)
+- Compute ~36 conditional patterns programmatically across 5 categories
+- Each pattern: exact `sample_size`, `hits`, `probability`, `avg_move_pips` from real data
+- Filter: `sample_size ≥ 15` AND `probability ≥ 55%`
+
+**Phase 1 (Gemini):**
+- Receives pre-computed conditions with REAL statistics
+- Role: Rank patterns by tradability and structural logic
+- Groups related patterns into clusters
+- Does NOT generate statistics
+
+**Phase 2 (DeepSeek):**
+- Validates market structure logic (not statistics)
+- Identifies microstructure mechanisms (institutional flow, session dynamics)
+- Flags coincidental patterns vs structurally meaningful ones
+
+**Phase 3 (Claude):**
+- Synthesizes validated patterns into trader-friendly implications
+- Writes market personality summary
+- Forbidden from modifying any statistics
+
+### Pattern Categories (~36 total)
+
+| Category | Count | Examples |
+|----------|-------|----------|
+| **Daily** | ~10 | Friday fails to break Thursday's high → Monday tests Friday's low; Inside day → breakout in prior trend direction |
+| **Weekly** | ~8 | Monday sets weekly high → week closes bearish; Friday closes above weekly open → next Monday bullish |
+| **Session** | ~8 | Quiet Asia (<30% ATR) → London moves >70% ATR; London continues Asia's direction |
+| **Volatility** | ~6 | 2+ quiet days → next day range > ATR; Range expanding 3 days → 4th day expands further |
+| **Cross-Market** | ~4 | SPX500 up → pair follows; NAS diverges from SPX → pair instability |
+
+### Modules
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| Condition Engine | `lib/cms/condition-engine.ts` | Programmatic computation of all patterns |
+| Data Collector | `lib/cms/data-collector.ts` | OANDA candle fetching + pre-computation |
+| Pipeline | `lib/cms/pipeline.ts` | Phase 0 → Gemini → DeepSeek → Claude orchestration |
+| Types | `lib/cms/types.ts` | TypeScript definitions (`CMSCondition`, `ProgrammaticCondition`) |
+
+### Prompts
+
+| Prompt | Path | Role |
+|--------|------|------|
+| Gemini Pattern Ranker | `lib/cms/prompts/gemini-pattern.ts` | Ranks pre-computed conditions by tradability |
+| DeepSeek Structure Validator | `lib/cms/prompts/deepseek-stats.ts` | Validates market structure logic |
+| Claude Synthesizer | `lib/cms/prompts/claude-synthesis.ts` | Writes implications + personality |
+
+### Story Integration (4th Intelligence Agent)
+
+CMS runs as a Story agent at **4AM UTC** (alongside Optimizer, News, Cross-Market).
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| CMS Agent | `lib/story/agents/cms-intelligence.ts` | Programmatic agent (no AI calls) |
+| Agent Types | `lib/story/agents/types.ts` | `CMSIntelligenceReport` definition |
+| Agent Runner | `lib/story/agents/runner.ts` | Orchestrates all 4 agents |
+| Narrator Prompt | `lib/story/prompts/claude-narrator.ts` | Injects CMS conditions into Intelligence Briefing |
+
+**Flow:** CMS agent → computes conditions → stores as `story_agent_reports` (type=`'cms_intelligence'`) → Claude narrator references validated patterns in scenarios
+
+### API Routes
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/cms/generate` | Trigger CMS analysis (background task) |
+| GET | `/api/cms/results?pair=EUR/USD` | Fetch cached results |
+
+### Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `cms_analyses` | Stores CMS results per user+pair (7-day expiry, JSONB result, RLS) |
+| `story_agent_reports` | Stores CMS as agent type `'cms_intelligence'` |
+
+**Migration:** `supabase/migrations/20260328_create_cms_analyses.sql`
+
+### Key Design Principles
+
+1. **AI Never Generates Statistics** — all numbers come from TypeScript iterating real candles
+2. **Source Tracking** — every condition has `source: 'programmatic'` field
+3. **Anti-Hallucination** — AI only interprets, never invents sample sizes or probabilities
+4. **Dedup-Friendly** — CMS agent has same dedup logic as other Story agents (once per day per pair)
+5. **Zero AI Cost in Agent Mode** — CMS agent is pure TypeScript (no model calls when run as Story agent)
+
+### UI
+
+- **Page**: `/cms` — standalone analysis interface
+- **Widget**: Story Intelligence Briefing shows top 8 CMS conditions with probabilities
 
 ---
 
@@ -344,9 +451,14 @@ Auto-generated weekly via cron. Story pipeline consumes the latest analysis as i
 | `story_scenarios` | Binary scenarios with trigger/invalidation |
 | `story_bibles` | Persistent arc memory per pair |
 | `story_seasons` | Season grouping (20 episodes/season) |
-| `story_agent_reports` | Intelligence reports (optimizer, news, cross-market) |
+| `story_agent_reports` | Intelligence reports (optimizer, news, cross-market, cms) |
 | `story_positions` | AI-guided positions across episodes (suggested→active→closed) |
 | `story_position_adjustments` | Journey log of SL/TP moves, partial closes per episode |
+
+### CMS Tables
+| Table | Purpose |
+|-------|---------|
+| `cms_analyses` | Conditional market shaping results (JSONB, 7-day expiry, RLS) |
 
 ### Scenario Analysis Tables
 | Table | Purpose |

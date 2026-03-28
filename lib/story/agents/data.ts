@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { AgentIntelligence, IndicatorOptimizerReport, NewsIntelligenceReport, CrossMarketReport } from './types'
+import type { AgentIntelligence, IndicatorOptimizerReport, NewsIntelligenceReport, CrossMarketReport, CMSIntelligenceReport } from './types'
 
-type AgentType = 'indicator_optimizer' | 'news_intelligence' | 'cross_market'
+type AgentType = 'indicator_optimizer' | 'news_intelligence' | 'cross_market' | 'cms_intelligence'
 
 /**
  * Upsert an agent report (deduped by user+pair+agent+date).
@@ -65,11 +65,13 @@ export async function getAgentReportsForPair(
     const optimizer = reports.find(r => r.agent_type === 'indicator_optimizer')
     const news = reports.find(r => r.agent_type === 'news_intelligence')
     const crossMarket = reports.find(r => r.agent_type === 'cross_market')
+    const cms = reports.find(r => r.agent_type === 'cms_intelligence')
 
     return {
         optimizer: optimizer?.report as unknown as IndicatorOptimizerReport ?? null,
         news: news?.report as unknown as NewsIntelligenceReport ?? null,
         crossMarket: crossMarket?.report as unknown as CrossMarketReport ?? null,
+        cms: cms?.report as unknown as CMSIntelligenceReport ?? null,
         generatedAt: reports[0]?.created_at ?? new Date().toISOString(),
     }
 }

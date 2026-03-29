@@ -79,6 +79,7 @@
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "supabase"
+    "supabase",
+    "railway-mcp-server"
   ]
 }

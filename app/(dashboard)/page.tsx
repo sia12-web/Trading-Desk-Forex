@@ -1,15 +1,13 @@
 import { getAuthUser, createClient } from '@/lib/supabase/server'
 import { getDashboardStats } from '@/lib/data/analytics'
-import { getActiveAccountId } from '@/lib/oanda/account'
 import Link from 'next/link'
 import { Zap, ArrowRight } from 'lucide-react'
 import { OandaAccountWidget } from '@/components/dashboard/OandaAccountWidget'
 import { RiskStatusWidget } from '@/components/dashboard/RiskStatusWidget'
 import { VolatilePairsWidget } from '@/components/dashboard/VolatilePairsWidget'
 import { MarketSessionsWidget } from '@/components/dashboard/MarketSessionsWidget'
-import { DeskMembers } from './_components/desk/DeskMembers'
 import { DeskStats } from './_components/desk/DeskStats'
-import type { DeskMeeting, DeskState, ProcessScore, SarahReport } from '@/lib/desk/types'
+import type { DeskState, ProcessScore } from '@/lib/desk/types'
 
 export default async function DashboardPage() {
     const user = await getAuthUser()
@@ -19,16 +17,7 @@ export default async function DashboardPage() {
     const stats = await getDashboardStats(user.id)
 
     // Fetch desk data in parallel
-    const [todayMeetingResult, deskStateResult, scoresResult] = await Promise.all([
-        supabase
-            .from('desk_meetings')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('meeting_type', 'morning_meeting')
-            .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
+    const [deskStateResult, scoresResult] = await Promise.all([
         supabase
             .from('desk_state')
             .select('*')
@@ -42,10 +31,8 @@ export default async function DashboardPage() {
             .limit(5),
     ])
 
-    const todayMeeting = (todayMeetingResult.data || null) as DeskMeeting | null
     const deskState = (deskStateResult.data || null) as DeskState | null
     const recentScores = (scoresResult.data || []) as ProcessScore[]
-    const sarahReport = (todayMeeting?.sarah_report || null) as SarahReport | null
 
     return (
         <div className="max-w-[1500px] mx-auto space-y-6 pb-20 px-4">
@@ -86,19 +73,13 @@ export default async function DashboardPage() {
                 <MarketSessionsWidget />
             </div>
 
-            {/* Bottom Row: Desk Characters + Metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-7">
-                    <DeskMembers todayMeeting={todayMeeting} />
-                </div>
-                <div className="lg:col-span-5">
-                    <DeskStats
-                        deskState={deskState}
-                        todayPnL={stats.todayPnL}
-                        sarahReport={sarahReport}
-                        recentScores={recentScores}
-                    />
-                </div>
+            {/* Bottom Row: Desk Metrics */}
+            <div className="max-w-md">
+                <DeskStats
+                    deskState={deskState}
+                    todayPnL={stats.todayPnL}
+                    recentScores={recentScores}
+                />
             </div>
         </div>
     )

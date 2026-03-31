@@ -26,6 +26,7 @@ import { TradeRiskGauge } from './TradeRiskGauge'
 import Link from 'next/link'
 import { MarketSentiment } from '@/lib/utils/sentiment'
 import { getMarketSessions } from '@/lib/utils/market-sessions'
+import type { DeskMeeting, TradeReviewOutput } from '@/lib/desk/types'
 
 interface TradeFormProps {
     instruments: OandaInstrument[]
@@ -58,7 +59,8 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const [isPlanning, setIsPlanning] = useState(false)
     const [planResult, setPlanResult] = useState<{ tradeId: string } | null>(null)
 
-
+    const [deskReview, setDeskReview] = useState<DeskMeeting | null>(null)
+    const [isReviewing, setIsReviewing] = useState(false)
 
     // Load persisted state on mount
     useEffect(() => {
@@ -269,6 +271,40 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
             alert('Network error while saving planned trade')
         } finally {
             setIsPlanning(false)
+        }
+    }
+
+    const handleDeskReview = async () => {
+        if (!stopLoss || !takeProfit) return
+        setIsReviewing(true)
+        setDeskReview(null)
+        try {
+            const res = await fetch('/api/desk/review', {
+                method: 'POST',
+                body: JSON.stringify({
+                    pair: selectedInstrument,
+                    direction,
+                    entry_price: orderType === 'LIMIT' ? limitPrice : entryPrice,
+                    stop_loss: stopLoss,
+                    take_profit: takeProfit,
+                    lot_size: units / 100000,
+                    reasoning: strategyExplanation || undefined,
+                }),
+                headers: { 'Content-Type': 'application/json' },
+            })
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
+                alert(errorData.error || 'Desk review failed')
+                return
+            }
+
+            const data = await res.json()
+            setDeskReview(data.meeting)
+        } catch (err) {
+            alert('Network error during desk review')
+        } finally {
+            setIsReviewing(false)
         }
     }
 
@@ -694,11 +730,14 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 {isPlanning ? 'Saving...' : 'Save to Journal'}
                             </button>
                             <button
-                                onClick={() => setShowConfirm(true)}
-                                disabled={!stopLoss}
-                                className={`flex-1 py-4 rounded-2xl font-bold text-sm transition-all ${stopLoss ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'bg-neutral-800 text-neutral-600'}`}
+                                onClick={handleDeskReview}
+                                disabled={!stopLoss || !takeProfit || isReviewing}
+                                className={`flex-1 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${stopLoss && takeProfit ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'bg-neutral-800 text-neutral-600'}`}
                             >
-                                Execute Order
+                                {isReviewing ? <><Loader2 size={16} className="animate-spin" /> Desk Review...</> : <>
+                                    <ShieldCheck size={16} />
+                                    Execute Order
+                                </>}
                             </button>
                         </div>
                     </div>
@@ -742,6 +781,129 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                     </div>
                 </div>
             )}
+
+            {deskReview && !showConfirm && (() => {
+                const marcus = deskReview.marcus_directive as TradeReviewOutput['marcus_directive'] | null
+                const sarah = deskReview.sarah_report as TradeReviewOutput['sarah_report'] | null
+                const ray = deskReview.ray_analysis as TradeReviewOutput['ray_analysis'] | null
+                const alex = deskReview.alex_brief as TradeReviewOutput['alex_brief'] | null
+                const verdict = marcus?.final_verdict || 'approved'
+                const isBlocked = verdict === 'blocked'
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setDeskReview(null)} />
+                        <div className="relative bg-neutral-900 border border-neutral-800 rounded-[3rem] p-8 max-w-2xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xl font-bold text-white">Desk Review</h3>
+                                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                                    isBlocked ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                    verdict === 'approved_with_concerns' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                    'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                }`}>
+                                    {verdict.replace(/_/g, ' ')}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {/* Ray */}
+                                {ray && (
+                                    <div className="p-4 rounded-2xl border border-blue-500/20 bg-blue-500/5 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-full bg-neutral-900/50 text-blue-400 flex items-center justify-center text-[10px] font-black border border-blue-500/20">R</div>
+                                            <div>
+                                                <p className="text-xs font-bold text-blue-400">Ray</p>
+                                                <p className="text-[9px] text-neutral-600">Quant Analyst</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-[11px] text-neutral-300 leading-relaxed">{ray.message}</p>
+                                        {'confluence_score' in ray && (
+                                            <p className="text-[9px] text-blue-400/70 font-mono">Confluence: {(ray as TradeReviewOutput['ray_analysis']).confluence_score}/10</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Sarah */}
+                                {sarah && (
+                                    <div className={`p-4 rounded-2xl border space-y-2 ${sarah.blocks?.length ? 'border-red-500/30 bg-red-500/5' : 'border-rose-500/20 bg-rose-500/5'}`}>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-full bg-neutral-900/50 text-rose-400 flex items-center justify-center text-[10px] font-black border border-rose-500/20">S</div>
+                                            <div>
+                                                <p className="text-xs font-bold text-rose-400">Sarah</p>
+                                                <p className="text-[9px] text-neutral-600">Risk Desk</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-[11px] text-neutral-300 leading-relaxed">{sarah.message}</p>
+                                        {sarah.blocks && sarah.blocks.length > 0 && (
+                                            <div className="space-y-1">
+                                                {sarah.blocks.map((block, i) => (
+                                                    <p key={i} className="text-[10px] text-red-400 flex items-center gap-1">
+                                                        <XCircle size={10} /> {block}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Alex */}
+                                {alex && (
+                                    <div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-full bg-neutral-900/50 text-emerald-400 flex items-center justify-center text-[10px] font-black border border-emerald-500/20">A</div>
+                                            <div>
+                                                <p className="text-xs font-bold text-emerald-400">Alex</p>
+                                                <p className="text-[9px] text-neutral-600">Macro Strategist</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-[11px] text-neutral-300 leading-relaxed">{alex.message}</p>
+                                        {'macro_alignment' in alex && (
+                                            <p className={`text-[9px] font-mono ${
+                                                (alex as TradeReviewOutput['alex_brief']).macro_alignment === 'aligned' ? 'text-emerald-400/70' :
+                                                (alex as TradeReviewOutput['alex_brief']).macro_alignment === 'conflicting' ? 'text-red-400/70' :
+                                                'text-neutral-500'
+                                            }`}>
+                                                Macro: {(alex as TradeReviewOutput['alex_brief']).macro_alignment}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Marcus */}
+                                {marcus && (
+                                    <div className={`p-4 rounded-2xl border space-y-2 ${isBlocked ? 'border-red-500/30 bg-red-500/5' : 'border-purple-500/20 bg-purple-500/5'}`}>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-full bg-neutral-900/50 text-purple-400 flex items-center justify-center text-[10px] font-black border border-purple-500/20">M</div>
+                                            <div>
+                                                <p className="text-xs font-bold text-purple-400">Marcus</p>
+                                                <p className="text-[9px] text-neutral-600">Portfolio Manager</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-[11px] text-neutral-300 leading-relaxed">{marcus.message}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={() => setDeskReview(null)}
+                                    className="flex-1 py-4 bg-neutral-800 text-white font-bold rounded-2xl text-sm transition-all hover:bg-neutral-700"
+                                >
+                                    {isBlocked ? 'Adjust Trade' : 'Go Back'}
+                                </button>
+                                {!isBlocked && (
+                                    <button
+                                        onClick={() => { setDeskReview(null); setShowConfirm(true) }}
+                                        className="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl text-sm transition-all shadow-xl shadow-blue-500/20 hover:bg-blue-500"
+                                    >
+                                        Proceed to Execute
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
 
             {showConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

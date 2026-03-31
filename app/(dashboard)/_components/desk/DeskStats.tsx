@@ -1,22 +1,13 @@
 import { Shield, Flame, AlertTriangle, DollarSign } from 'lucide-react'
-import type { DeskState, ProcessScore, SarahReport } from '@/lib/desk/types'
+import type { DeskState, ProcessScore } from '@/lib/desk/types'
 
 interface DeskStatsProps {
     deskState: DeskState | null
     todayPnL: number
-    sarahReport: SarahReport | null
     recentScores: ProcessScore[]
 }
 
-export function DeskStats({ deskState, todayPnL, sarahReport, recentScores }: DeskStatsProps) {
-    const riskStatus = sarahReport?.risk_status || 'green'
-    const riskColors: Record<string, { text: string; bg: string; border: string }> = {
-        green: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-        yellow: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-        red: { text: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
-    }
-    const riskStyle = riskColors[riskStatus] || riskColors.green
-
+export function DeskStats({ deskState, todayPnL, recentScores }: DeskStatsProps) {
     const processAvg = deskState?.weekly_process_average
         ? Number(deskState.weekly_process_average).toFixed(1)
         : recentScores.length > 0
@@ -86,13 +77,6 @@ export function DeskStats({ deskState, todayPnL, sarahReport, recentScores }: De
                     </p>
                 </div>
 
-                {/* Risk Status */}
-                <div className={`mt-3 p-3 rounded-xl border ${riskStyle.border} ${riskStyle.bg}`}>
-                    <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Sarah&apos;s Risk Status</p>
-                        <span className={`text-xs font-black uppercase ${riskStyle.text}`}>{riskStatus}</span>
-                    </div>
-                </div>
             </div>
         </div>
     )

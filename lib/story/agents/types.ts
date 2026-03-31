@@ -71,6 +71,80 @@ export interface CrossMarketReport {
     summary: string
 }
 
+// ── Index-Specific Report Types ──
+
+export interface IndexNewsIntelligenceReport {
+    pair: string
+    monetary_policy: {
+        central_bank: string
+        current_stance: 'hawkish' | 'dovish' | 'neutral'
+        rate_path: string
+        qt_status: string
+        next_meeting: string
+    }
+    economic_outlook: {
+        growth_trajectory: 'accelerating' | 'decelerating' | 'stable'
+        inflation_status: string
+        labor_market: string
+        key_data_this_week: string[]
+    }
+    earnings_context: {
+        season_status: 'peak' | 'early' | 'winding_down' | 'off_season'
+        notable_reports: string[]
+        sector_surprises: string
+    }
+    risk_appetite: {
+        vix_assessment: string
+        institutional_flow: string
+        overall: 'risk_on' | 'risk_off' | 'neutral'
+    }
+    sector_dynamics: {
+        leading_sectors: string[]
+        lagging_sectors: string[]
+        rotation_narrative: string
+    }
+    dollar_impact: {
+        dxy_trend: string
+        implication: string
+    }
+    key_risks: Array<{
+        risk: string
+        probability: string
+        impact_direction: 'bullish' | 'bearish'
+    }>
+    upcoming_catalysts: Array<{
+        event: string
+        date: string
+        expected_impact: string
+    }>
+    fundamental_narrative: string
+    summary: string
+}
+
+export interface IndexCrossMarketReport {
+    pair: string
+    peer_indices: Array<{
+        instrument: string
+        name: string
+        change1d: number
+        change5d: number
+        trend: string
+        divergence_note: string
+    }>
+    bond_analysis: {
+        instrument: string
+        yield_trend: string
+        implication: string
+    } | null
+    dollar_analysis: {
+        trend: string
+        implication: string
+    }
+    correlation_thesis: string
+    risk_appetite: 'risk_on' | 'risk_off' | 'mixed'
+    summary: string
+}
+
 export interface CMSIntelligenceReport {
     pair: string
     total_conditions: number
@@ -88,8 +162,8 @@ export interface CMSIntelligenceReport {
 
 export interface AgentIntelligence {
     optimizer: IndicatorOptimizerReport | null
-    news: NewsIntelligenceReport | null
-    crossMarket: CrossMarketReport | null
+    news: NewsIntelligenceReport | IndexNewsIntelligenceReport | null
+    crossMarket: CrossMarketReport | IndexCrossMarketReport | null
     cms: CMSIntelligenceReport | null
     generatedAt: string
 }

@@ -15,8 +15,12 @@ const TIMEFRAME_CONFIG: { tf: TimeframeData['timeframe']; granularity: string; c
     { tf: 'H1', granularity: 'H1', count: 300 },
 ]
 
-// Standard pip locations per pair type
+import { getAssetConfig } from './asset-config'
+
+// Standard pip/point locations per pair type
 function getPipLocation(pair: string): number {
+    const config = getAssetConfig(pair)
+    if (config.type === 'cfd_index') return -1 // Indices: 1 decimal (15250.5)
     const jpyPairs = ['USD/JPY', 'EUR/JPY', 'GBP/JPY', 'AUD/JPY', 'NZD/JPY', 'CAD/JPY', 'CHF/JPY']
     return jpyPairs.includes(pair) ? -2 : -4
 }

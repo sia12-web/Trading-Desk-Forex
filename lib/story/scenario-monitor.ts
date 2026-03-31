@@ -38,10 +38,10 @@ const TIMEFRAME_TO_GRANULARITY: Record<string, string> = {
 }
 
 /**
- * Check if the forex market is currently open.
- * Forex market hours: Sunday 10PM UTC → Friday 10PM UTC
+ * Check if the market is currently open (OANDA hours).
+ * OANDA forex + CFD indices: Sunday 10PM UTC → Friday 10PM UTC
  */
-export function isForexMarketOpen(): boolean {
+export function isMarketOpen(): boolean {
     const now = new Date()
     const day = now.getUTCDay() // 0=Sun, 6=Sat
     const hour = now.getUTCHours()
@@ -188,7 +188,7 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
     }
 
     // Guard: market must be open
-    if (!isForexMarketOpen()) {
+    if (!isMarketOpen()) {
         result.skippedMarketClosed = true
         console.log('[ScenarioMonitor] Market closed, skipping.')
         return result

@@ -1,4 +1,5 @@
 import type { PositionGuidance } from '@/lib/story/types'
+import { getAssetConfig } from '@/lib/story/asset-config'
 
 interface PsychologyContext {
     streak: number
@@ -21,15 +22,19 @@ export function buildPositionEntryReactionPrompt(
     currentPrice: number,
     atr14: number,
 ): string {
-    const slPips = guidance.stop_loss
-        ? Math.abs(currentPrice - guidance.stop_loss) * 10000
-        : null
-    const tp1Pips = guidance.take_profit_1
-        ? Math.abs(guidance.take_profit_1 - currentPrice) * 10000
-        : null
-    const rr = slPips && tp1Pips ? (tp1Pips / slPips).toFixed(2) : 'N/A'
+    const config = getAssetConfig(pair)
+    const mult = config.pointMultiplier
+    const label = config.pointLabel
 
-    return `You are a JP Morgan FX desk reacting to an AI-generated trade entry recommendation. Each character gives a 1-2 sentence reaction. Stay in character. Be honest — if the trade looks weak, say so.
+    const slPoints = guidance.stop_loss
+        ? Math.abs(currentPrice - guidance.stop_loss) * mult
+        : null
+    const tp1Points = guidance.take_profit_1
+        ? Math.abs(guidance.take_profit_1 - currentPrice) * mult
+        : null
+    const rr = slPoints && tp1Points ? (tp1Points / slPoints).toFixed(2) : 'N/A'
+
+    return `You are a JP Morgan desk reacting to an AI-generated trade entry recommendation. Each character gives a 1-2 sentence reaction. Stay in character. Be honest — if the trade looks weak, say so.
 
 ## THE RECOMMENDATION
 
@@ -92,7 +97,7 @@ export function buildPositionManagementReactionPrompt(
     isCloseAction: boolean,
 ): string {
     if (isCloseAction) {
-        return `You are a JP Morgan FX desk reacting to an AI recommendation to CLOSE a position. Each character gives 1 sentence.
+        return `You are a JP Morgan desk reacting to an AI recommendation to CLOSE a position. Each character gives 1 sentence.
 
 Episode: "${storyTitle}"
 Pair: ${pair}
@@ -117,7 +122,7 @@ Trader Streak: ${psychology.streak}
     }
 
     // hold/adjust — only Ray + Sarah
-    return `You are the quant (Ray) and risk manager (Sarah) on a JP Morgan FX desk. React to a position management recommendation. 1-2 sentences each.
+    return `You are the quant (Ray) and risk manager (Sarah) on a JP Morgan desk. React to a position management recommendation. 1-2 sentences each.
 
 Episode: "${storyTitle}"
 Pair: ${pair}

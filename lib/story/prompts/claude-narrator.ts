@@ -1,6 +1,7 @@
 import type { StoryDataPayload, StoryNewsContext, EpisodeType } from '../types'
 import type { StoryBible } from '../bible'
-import type { AgentIntelligence } from '../agents/types'
+import type { AgentIntelligence, IndexNewsIntelligenceReport, IndexCrossMarketReport, NewsIntelligenceReport, CrossMarketReport } from '../agents/types'
+import { getAssetConfig } from '../asset-config'
 import type { StoryPosition, PositionAdjustment } from '@/lib/data/story-positions'
 
 interface PreviousEpisode {
@@ -231,11 +232,16 @@ Your job: assess the current position and recommend the next action.
 - NEVER recommend 'enter_long' or 'enter_short' during position management — the trader already has a position`
     }
 
-    return `You are the Story Narrator — a master storyteller AND economist who turns forex market data into compelling narratives enriched with fundamental intelligence.
+    const assetConfig = getAssetConfig(data.pair)
+    const assetContextNote = assetConfig.type === 'cfd_index'
+        ? `\n\nIMPORTANT: ${data.pair} is a stock INDEX (${assetConfig.indexMeta!.displayName}), NOT a currency pair. FUNDAMENTALS DRIVE THE STORY — Fed/ECB policy, earnings, sector rotation, and macro data are the PRIMARY narrative drivers. Technical levels provide entry/exit precision but do NOT lead the story. Use "${assetConfig.pointLabel}" not "pips" for price movements.`
+        : ''
+
+    return `You are the Story Narrator — a master storyteller AND economist who turns market data into compelling narratives enriched with fundamental intelligence.
 
 # THE STORY OF ${data.pair}
 
-Think of ${data.pair} as a TV show you've been following. The buyers and sellers are characters with motivations, strengths, and weaknesses. Each analysis is a new episode in an ongoing story.
+Think of ${data.pair} as a TV show you've been following. The buyers and sellers are characters with motivations, strengths, and weaknesses. Each analysis is a new episode in an ongoing story.${assetContextNote}
 
 ## YOUR CHARACTER FRAMEWORK
 - **Buyers** = the bulls. They want price to go up. Their weapons: demand zones, support levels, bullish patterns.
@@ -621,47 +627,94 @@ Executive Summary: ${optimizer.summary}`)
 Report unavailable today.`)
     }
 
-    // ── News section ──
+    // ── News section — renders differently for forex vs index ──
     if (news) {
-        const risksBlock = news.key_risks
-            .slice(0, 4)
-            .map(r => `- ${r.risk} (${r.probability} probability, ${r.impact_direction})`)
-            .join('\n')
+        const isIndexNews = 'monetary_policy' in news
+        if (isIndexNews) {
+            const idx = news as IndexNewsIntelligenceReport
+            const risksBlock = idx.key_risks
+                .slice(0, 4)
+                .map(r => `- ${r.risk} (${r.probability} probability, ${r.impact_direction})`)
+                .join('\n')
+            const catalystsBlock = idx.upcoming_catalysts
+                .slice(0, 4)
+                .map(c => `- ${c.event} (${c.date}): ${c.expected_impact}`)
+                .join('\n')
 
-        const catalystsBlock = news.upcoming_catalysts
-            .slice(0, 4)
-            .map(c => `- ${c.event} (${c.date}): ${c.expected_impact}`)
-            .join('\n')
+            sections.push(`### Fundamental Intelligence — INDEX (News Agent)
+⚠️ This is a stock index. Fundamentals are the PRIMARY story driver.
 
-        sections.push(`### Macro & Fundamental Intelligence (News Agent)
-${news.macro_environment.base_currency_outlook.split('/')[0] || 'Base'} Outlook: ${news.macro_environment.base_currency_outlook}
-${news.macro_environment.quote_currency_outlook.split('/')[0] || 'Quote'} Outlook: ${news.macro_environment.quote_currency_outlook}
-Relative Strength: ${news.macro_environment.relative_strength}
-Central Banks: ${news.central_bank_analysis.base_currency_bank} (${news.central_bank_analysis.base_rate_path}) vs ${news.central_bank_analysis.quote_currency_bank} (${news.central_bank_analysis.quote_rate_path})
-Rate Differential Trend: ${news.central_bank_analysis.rate_differential_trend}
-Geopolitical Factors: ${news.geopolitical_factors.join('; ') || 'None significant'}
-Sentiment: ${news.sentiment_indicators.overall} — Institutional: ${news.sentiment_indicators.institutional}, Retail: ${news.sentiment_indicators.retail}
+Monetary Policy: ${idx.monetary_policy.central_bank} — ${idx.monetary_policy.current_stance}, rate path: ${idx.monetary_policy.rate_path}
+QT Status: ${idx.monetary_policy.qt_status} | Next Meeting: ${idx.monetary_policy.next_meeting}
+Economic Outlook: Growth ${idx.economic_outlook.growth_trajectory} | Inflation: ${idx.economic_outlook.inflation_status} | Labor: ${idx.economic_outlook.labor_market}
+${idx.economic_outlook.key_data_this_week.length > 0 ? `Key Data This Week: ${idx.economic_outlook.key_data_this_week.join(', ')}` : ''}
+Earnings: ${idx.earnings_context.season_status} season | ${idx.earnings_context.sector_surprises}
+${idx.earnings_context.notable_reports.length > 0 ? `Notable Reports: ${idx.earnings_context.notable_reports.join(', ')}` : ''}
+Risk Appetite: ${idx.risk_appetite.overall} — VIX: ${idx.risk_appetite.vix_assessment} | Flows: ${idx.risk_appetite.institutional_flow}
+Sector Rotation: Leading: ${idx.sector_dynamics.leading_sectors.join(', ')} | Lagging: ${idx.sector_dynamics.lagging_sectors.join(', ')}
+${idx.sector_dynamics.rotation_narrative}
+Dollar Impact: ${idx.dollar_impact.dxy_trend} → ${idx.dollar_impact.implication}
 ${risksBlock ? `Key Risks:\n${risksBlock}` : ''}
 ${catalystsBlock ? `Upcoming Catalysts:\n${catalystsBlock}` : ''}
-Fundamental Narrative: ${news.fundamental_narrative}`)
+Fundamental Narrative: ${idx.fundamental_narrative}`)
+        } else {
+            const fx = news as NewsIntelligenceReport
+            const risksBlock = fx.key_risks
+                .slice(0, 4)
+                .map(r => `- ${r.risk} (${r.probability} probability, ${r.impact_direction})`)
+                .join('\n')
+            const catalystsBlock = fx.upcoming_catalysts
+                .slice(0, 4)
+                .map(c => `- ${c.event} (${c.date}): ${c.expected_impact}`)
+                .join('\n')
+
+            sections.push(`### Macro & Fundamental Intelligence (News Agent)
+${fx.macro_environment.base_currency_outlook.split('/')[0] || 'Base'} Outlook: ${fx.macro_environment.base_currency_outlook}
+${fx.macro_environment.quote_currency_outlook.split('/')[0] || 'Quote'} Outlook: ${fx.macro_environment.quote_currency_outlook}
+Relative Strength: ${fx.macro_environment.relative_strength}
+Central Banks: ${fx.central_bank_analysis.base_currency_bank} (${fx.central_bank_analysis.base_rate_path}) vs ${fx.central_bank_analysis.quote_currency_bank} (${fx.central_bank_analysis.quote_rate_path})
+Rate Differential Trend: ${fx.central_bank_analysis.rate_differential_trend}
+Geopolitical Factors: ${fx.geopolitical_factors.join('; ') || 'None significant'}
+Sentiment: ${fx.sentiment_indicators.overall} — Institutional: ${fx.sentiment_indicators.institutional}, Retail: ${fx.sentiment_indicators.retail}
+${risksBlock ? `Key Risks:\n${risksBlock}` : ''}
+${catalystsBlock ? `Upcoming Catalysts:\n${catalystsBlock}` : ''}
+Fundamental Narrative: ${fx.fundamental_narrative}`)
+        }
     } else {
         sections.push(`### Macro & Fundamental Intelligence (News Agent)
 Report unavailable today.`)
     }
 
-    // ── Cross-Market section ──
+    // ── Cross-Market section — renders differently for forex vs index ──
     if (crossMarket) {
-        const indicesBlock = crossMarket.indices_analyzed
-            .map(idx => `- ${idx.name}: ${idx.recent_trend} → ${idx.correlation_signal}`)
-            .join('\n')
+        const isIndexCM = 'peer_indices' in crossMarket
+        if (isIndexCM) {
+            const idx = crossMarket as IndexCrossMarketReport
+            const peersBlock = idx.peer_indices
+                .map(p => `- ${p.name} (${p.instrument}): 1D ${p.change1d > 0 ? '+' : ''}${p.change1d.toFixed(1)}%, trend ${p.trend}${p.divergence_note ? ` — ${p.divergence_note}` : ''}`)
+                .join('\n')
 
-        sections.push(`### Cross-Market Effects (Cross-Market Agent)
-Risk Appetite: ${crossMarket.risk_appetite} — ${crossMarket.risk_appetite_reasoning}
+            sections.push(`### Cross-Market Effects — INDEX (Cross-Market Agent)
+Peer Indices:
+${peersBlock || 'No peer data.'}
+${idx.bond_analysis ? `Bond Market: ${idx.bond_analysis.yield_trend} → ${idx.bond_analysis.implication}` : 'Bond data unavailable.'}
+Dollar: ${idx.dollar_analysis.trend} → ${idx.dollar_analysis.implication}
+Risk Appetite: ${idx.risk_appetite}
+Correlation Thesis: ${idx.correlation_thesis}`)
+        } else {
+            const fx = crossMarket as CrossMarketReport
+            const indicesBlock = fx.indices_analyzed
+                .map(i => `- ${i.name}: ${i.recent_trend} → ${i.correlation_signal}`)
+                .join('\n')
+
+            sections.push(`### Cross-Market Effects (Cross-Market Agent)
+Risk Appetite: ${fx.risk_appetite} — ${fx.risk_appetite_reasoning}
 Index Analysis:
 ${indicesBlock}
-Cross-Market Thesis: ${crossMarket.cross_market_thesis}
-Currency Implications: ${crossMarket.currency_implications.base_currency} / ${crossMarket.currency_implications.quote_currency} → net ${crossMarket.currency_implications.net_effect}
-${crossMarket.divergences.length > 0 ? `Divergences: ${crossMarket.divergences.join('; ')}` : 'No notable divergences.'}`)
+Cross-Market Thesis: ${fx.cross_market_thesis}
+Currency Implications: ${fx.currency_implications.base_currency} / ${fx.currency_implications.quote_currency} → net ${fx.currency_implications.net_effect}
+${fx.divergences.length > 0 ? `Divergences: ${fx.divergences.join('; ')}` : 'No notable divergences.'}`)
+        }
     } else {
         sections.push(`### Cross-Market Effects (Cross-Market Agent)
 Report unavailable today.`)

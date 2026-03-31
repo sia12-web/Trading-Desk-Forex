@@ -308,7 +308,11 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
         // Build agent reports snapshot for episode
         const agentReportsSnapshot: Record<string, unknown> = {}
         if (agentIntelligence.optimizer) agentReportsSnapshot.optimizer = { summary: agentIntelligence.optimizer.summary, market_regime: agentIntelligence.optimizer.market_regime }
-        if (agentIntelligence.news) agentReportsSnapshot.news = { summary: agentIntelligence.news.summary, sentiment: agentIntelligence.news.sentiment_indicators?.overall }
+        if (agentIntelligence.news) {
+            const newsReport = agentIntelligence.news
+            const sentiment = 'sentiment_indicators' in newsReport ? newsReport.sentiment_indicators?.overall : ('risk_appetite' in newsReport ? newsReport.risk_appetite?.overall : undefined)
+            agentReportsSnapshot.news = { summary: newsReport.summary, sentiment }
+        }
         if (agentIntelligence.crossMarket) agentReportsSnapshot.crossMarket = { summary: agentIntelligence.crossMarket.summary, risk_appetite: agentIntelligence.crossMarket.risk_appetite }
         if (agentIntelligence.cms) agentReportsSnapshot.cms = { total_conditions: agentIntelligence.cms.total_conditions, market_personality: agentIntelligence.cms.market_personality }
 

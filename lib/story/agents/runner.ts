@@ -1,8 +1,11 @@
 import { collectStoryData } from '../data-collector'
+import { getAssetConfig } from '../asset-config'
 import { getTodayReportTypes } from './data'
 import { runIndicatorOptimizer } from './indicator-optimizer'
 import { runNewsIntelligence } from './news-intelligence'
+import { runIndexNewsIntelligence } from './news-intelligence-index'
 import { runCrossMarketAnalysis } from './cross-market'
+import { runIndexCrossMarketAnalysis } from './cross-market-index'
 import { runCMSIntelligence } from './cms-intelligence'
 import type { AgentIntelligence } from './types'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -50,19 +53,28 @@ export async function runAgentsForPair(
         }
     }
 
-    // Agent 2: News Intelligence (Gemini) — independent of OANDA data
+    // Agent 2: News Intelligence (Gemini) — routes to index or forex variant
+    const assetConfig = getAssetConfig(pair)
     if (needsNews) {
         try {
-            results.news = await runNewsIntelligence(pair, userId, client)
+            if (assetConfig.type === 'cfd_index') {
+                results.news = await runIndexNewsIntelligence(pair, userId, client)
+            } else {
+                results.news = await runNewsIntelligence(pair, userId, client)
+            }
         } catch (error) {
             console.error(`News agent error for ${pair}:`, error instanceof Error ? error.message : error)
         }
     }
 
-    // Agent 3: Cross-Market Effects (Gemini) — fetches index candles
+    // Agent 3: Cross-Market Effects (Gemini) — routes to index or forex variant
     if (needsCrossMarket) {
         try {
-            results.crossMarket = await runCrossMarketAnalysis(pair, userId, client)
+            if (assetConfig.type === 'cfd_index') {
+                results.crossMarket = await runIndexCrossMarketAnalysis(pair, userId, client)
+            } else {
+                results.crossMarket = await runCrossMarketAnalysis(pair, userId, client)
+            }
         } catch (error) {
             console.error(`Cross-market agent error for ${pair}:`, error instanceof Error ? error.message : error)
         }

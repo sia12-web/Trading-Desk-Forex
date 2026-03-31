@@ -1,24 +1,47 @@
 import type { DeskContext, TradeProposal } from '../types'
+import { getAssetConfig } from '@/lib/story/asset-config'
+
+export interface VolatilitySnapshot {
+    atr14: number
+    atr50: number
+    ratio: number
+    status: 'spike' | 'hot' | 'normal' | 'cold'
+    label: string
+    pointLabel: 'pips' | 'points'
+}
 
 /**
  * Build the trade review prompt — desk reviews a proposed trade before entry.
  */
-export function buildTradeReviewPrompt(context: DeskContext, proposal: TradeProposal): string {
-    return `You are simulating a JP Morgan FX trading desk reviewing a trade proposal from a senior trader. Each desk member evaluates the trade from their specialty. Be honest — if the trade is good, say so. If it's bad, block it.
+export function buildTradeReviewPrompt(context: DeskContext, proposal: TradeProposal, volatility?: VolatilitySnapshot): string {
+    const config = getAssetConfig(proposal.pair)
+    const mult = config.pointMultiplier
+    const label = config.pointLabel
+
+    const riskPoints = Math.abs(proposal.entry_price - proposal.stop_loss) * mult
+    const rewardPoints = Math.abs(proposal.take_profit - proposal.entry_price) * mult
+    const rr = riskPoints > 0 ? (rewardPoints / riskPoints).toFixed(2) : 'N/A'
+
+    const vol = volatility || { atr14: 0, atr50: 0, ratio: 1, status: 'normal' as const, label: 'Unavailable', pointLabel: label }
+    const isCold = vol.status === 'cold'
+    const isSpike = vol.status === 'spike'
+
+    return `You are simulating a JP Morgan trading desk reviewing a trade proposal. Each desk member evaluates from their specialty. Be honest — if the trade is bad, block it.
 
 ## THE DESK CHARACTERS
 
-**RAY (Quant):** Evaluates statistical edge, confluence, probability. Never says "bullish" — uses percentages.
+**RAY (Quant — VOLATILITY HAWK):** Evaluates statistical edge, confluence, AND VOLATILITY. Ray is OBSESSED with whether the market has enough energy to reach the target. If ATR is compressed (cold), Ray will loudly flag that the trade will "die of boredom." If volatility is spiking, Ray warns about whipsaws. Never says "bullish" — uses percentages and ATR numbers.
 **SARAH (Risk):** Checks position sizing, exposure limits, rule compliance. Can BLOCK the trade.
-**ALEX (Macro):** Assesses if the trade aligns with the macro picture, central bank dynamics, flows.
-**MARCUS (PM):** Synthesizes all three views. Gives final verdict.
+**ALEX (Macro):** Assesses if the trade aligns with the macro picture.
+**MARCUS (PM):** Synthesizes all views. If Ray flags cold volatility, Marcus MUST factor it into the verdict — a technically perfect setup in a dead market is still a bad trade.
 
 ## CRITICAL RULES
 
 1. ONLY reference data provided below. Never fabricate data.
 2. If the trade violates risk rules, Sarah MUST block it.
-3. Each character: 2-4 sentences. Fast, professional.
-4. Be genuinely critical when warranted. This desk doesn't rubber-stamp trades.
+3. ${isCold ? '**VOLATILITY IS COLD** — Ray MUST flag this. The market is not moving enough to justify entry. Unless there is exceptional confluence, Marcus should block or add conditions.' : isSpike ? '**VOLATILITY IS SPIKING** — Ray MUST warn about widened stops and potential whipsaws.' : ''}
+4. Each character: 2-4 sentences. Fast, professional.
+5. Be genuinely critical when warranted. This desk doesn't rubber-stamp trades.
 
 ## PROPOSED TRADE
 
@@ -31,9 +54,18 @@ ${proposal.lot_size ? `- Lot Size: ${proposal.lot_size}` : ''}
 ${proposal.reasoning ? `- Trader's Reasoning: "${proposal.reasoning}"` : ''}
 
 ### Risk Calculations
-- Pips at risk: ${Math.abs(proposal.entry_price - proposal.stop_loss).toFixed(5)}
-- Pips to target: ${Math.abs(proposal.take_profit - proposal.entry_price).toFixed(5)}
-- Reward:Risk ratio: ${(Math.abs(proposal.take_profit - proposal.entry_price) / Math.abs(proposal.entry_price - proposal.stop_loss)).toFixed(2)}
+- ${label} at risk: ${riskPoints.toFixed(1)}
+- ${label} to target: ${rewardPoints.toFixed(1)}
+- Reward:Risk ratio: ${rr}
+${vol.atr14 > 0 ? `- Daily ATR14: ${vol.atr14.toFixed(1)} ${label} (the market's average daily movement)
+- TP distance vs ATR: ${(rewardPoints / vol.atr14).toFixed(1)}x daily range ${rewardPoints > vol.atr14 * 2 ? '⚠️ TARGET IS >2x DAILY RANGE — may take multiple days' : ''}
+- SL distance vs ATR: ${(riskPoints / vol.atr14).toFixed(1)}x daily range` : ''}
+
+### VOLATILITY STATUS
+- Regime: **${vol.status.toUpperCase()}** — ${vol.label}
+- ATR14: ${vol.atr14.toFixed(1)} ${vol.pointLabel} | ATR50: ${vol.atr50.toFixed(1)} ${vol.pointLabel} | Ratio: ${vol.ratio.toFixed(2)}x
+${isCold ? `- ⚠️ COLD MARKET: The market is moving LESS than average. Pro traders wait for volatility. A ${rewardPoints.toFixed(0)} ${label} target in a market averaging ${vol.atr14.toFixed(0)} ${label}/day is unrealistic without a catalyst.` : ''}
+${isSpike ? `- ⚠️ SPIKE: Volatility is 1.5x+ above average. Wider stops needed. Risk of whipsaw is elevated.` : ''}
 
 ## CURRENT CONTEXT
 

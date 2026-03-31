@@ -7,7 +7,11 @@ import { notifyUser } from '@/lib/notifications/notifier'
 import { collectDeskContext } from './data-collector'
 import { buildMorningMeetingPrompt } from './prompts/morning-meeting'
 import { buildTradeReviewPrompt } from './prompts/trade-review'
+import type { VolatilitySnapshot } from './prompts/trade-review'
 import { buildProcessScoringPrompt } from './prompts/process-scoring'
+import { getCandles } from '@/lib/oanda/client'
+import { calculateATR, getATRStatus } from '@/lib/utils/atr'
+import { getAssetConfig } from '@/lib/story/asset-config'
 import type {
     DeskMeeting,
     MorningMeetingOutput,
@@ -130,11 +134,14 @@ export async function generateTradeReview(
 ): Promise<DeskMeeting> {
     const supabase = await createClient()
 
-    // 1. Collect context
-    const context = await collectDeskContext(userId)
+    // 1. Collect context + volatility in parallel
+    const [context, volatility] = await Promise.all([
+        collectDeskContext(userId),
+        fetchVolatilityForPair(proposal.pair),
+    ])
 
     // 2. Build prompt
-    const prompt = buildTradeReviewPrompt(context, proposal)
+    const prompt = buildTradeReviewPrompt(context, proposal, volatility)
 
     // 3. Call Gemini
     const start = Date.now()
@@ -288,6 +295,38 @@ export async function scoreTradeProcess(
     }
 
     return score as ProcessScore
+}
+
+// =============================================================================
+// Volatility Fetch (lightweight — daily candles only)
+// =============================================================================
+
+async function fetchVolatilityForPair(pair: string): Promise<VolatilitySnapshot> {
+    try {
+        const instrument = pair.replace('/', '_')
+        const config = getAssetConfig(pair)
+        const pipLocation = config.type === 'cfd_index' ? -1
+            : pair.includes('JPY') ? -2 : -4
+
+        const { data: candles } = await getCandles({
+            instrument,
+            granularity: 'D',
+            count: 60,
+        })
+
+        if (!candles || candles.length < 20) {
+            return { atr14: 0, atr50: 0, ratio: 1, status: 'normal', label: 'Unavailable', pointLabel: config.pointLabel }
+        }
+
+        const atr14 = calculateATR(candles, 14, pipLocation)
+        const atr50 = calculateATR(candles, 50, pipLocation)
+        const ratio = atr50 > 0 ? atr14 / atr50 : 1
+        const { status, label } = getATRStatus(ratio)
+
+        return { atr14, atr50, ratio, status, label, pointLabel: config.pointLabel }
+    } catch {
+        return { atr14: 0, atr50: 0, ratio: 1, status: 'normal', label: 'Unavailable', pointLabel: 'pips' }
+    }
 }
 
 // =============================================================================

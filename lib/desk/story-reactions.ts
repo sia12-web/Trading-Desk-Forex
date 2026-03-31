@@ -24,6 +24,8 @@ export interface StoryReactionContext {
     episodeType: EpisodeType
     currentPrice: number
     atr14: number
+    atr50: number
+    volatilityStatus: string  // 'spike' | 'hot' | 'normal' | 'cold'
 }
 
 // ── AI Output Types ──
@@ -61,6 +63,7 @@ export async function generatePositionEntryReaction(
         // 2. Build prompt
         const prompt = buildPositionEntryReactionPrompt(
             ctx.pair, guidance, storyTitle, psychology, ctx.currentPrice, ctx.atr14,
+            ctx.atr50, ctx.volatilityStatus,
         )
 
         // 3. Call Gemini

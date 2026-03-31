@@ -395,6 +395,7 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
                 userId, pair, episodeId: episode.id,
                 episodeNumber, seasonNumber, episodeType,
                 currentPrice: data.currentPrice, atr14: data.atr14,
+                atr50: data.atr50, volatilityStatus: data.volatilityStatus,
             }
 
             if (episodeType === 'position_entry') {

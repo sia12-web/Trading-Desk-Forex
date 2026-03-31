@@ -10,8 +10,13 @@ export interface OandaConfig {
 }
 
 export async function getAccountMode(): Promise<AccountMode> {
-    const cookieStore = await cookies()
-    return (cookieStore.get('oanda-mode')?.value as AccountMode) || 'live'
+    try {
+        const cookieStore = await cookies()
+        return (cookieStore.get('oanda-mode')?.value as AccountMode) || 'live'
+    } catch {
+        // cookies() can fail during static generation or build time
+        return 'live'
+    }
 }
 
 export async function getOandaConfig(): Promise<OandaConfig> {

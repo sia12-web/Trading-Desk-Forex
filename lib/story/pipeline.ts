@@ -26,7 +26,7 @@ import { getLatestScenarioAnalysis } from '@/lib/data/scenario-analyses'
 import type { MarketContext } from '@/lib/scenario-analysis/types'
 import { notifyUser } from '@/lib/notifications/notifier'
 import { getActivePosition, createPosition, updatePosition, addAdjustment, getAdjustmentsForPosition } from '@/lib/data/story-positions'
-import { getOandaDemoConfig } from '@/lib/oanda/account'
+import { getOandaConfig } from '@/lib/oanda/account'
 import type { OandaAccountSummary } from '@/lib/types/oanda'
 import type { ActivePositionContext } from './prompts/claude-narrator'
 import { triggerAutoProcessScore, getMinimalPsychologyContext, generatePositionEntryReaction, generatePositionManagementReaction } from '@/lib/desk/story-reactions'
@@ -96,7 +96,7 @@ export async function generateStory(
                 .eq('is_active', true)
             riskRules = rules || []
 
-            const cfg = await getOandaDemoConfig()
+            const cfg = await getOandaConfig()
             const res = await fetch(`${cfg.baseUrl}/v3/accounts/${cfg.accountId}/summary`, {
                 headers: { Authorization: `Bearer ${cfg.apiKey}` },
             })

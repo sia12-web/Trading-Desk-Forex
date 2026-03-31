@@ -45,6 +45,15 @@ export interface ActivePositionContext {
     adjustments: PositionAdjustment[]
 }
 
+export interface PsychologyContext {
+    streak: number
+    weeklyAvg: number | null
+    weaknesses: string[]
+    currentFocus: string | null
+    riskPersonality: string | null
+    violationsThisWeek: number
+}
+
 export function buildStoryNarratorPrompt(
     data: StoryDataPayload,
     geminiOutput: string,
@@ -61,6 +70,7 @@ export function buildStoryNarratorPrompt(
     riskContext?: string | null,
     episodeType?: EpisodeType,
     triggeredScenario?: { title: string; direction: string; trigger_level: number; trigger_direction: string; trigger_timeframe: string } | null,
+    psychology?: PsychologyContext | null,
 ): string {
     // ── Season Archive block (deep cross-season memory) ──
     const archiveBlock = seasonArchive && seasonArchive.length > 0
@@ -124,6 +134,15 @@ ${lastEpisode.scenarios?.map(s => `- "${s.title}" (${s.direction}) — ${s.statu
         : `## LAST EPISODE (Immediate Continuity)
 
 No previous episode exists. This is the series premiere.`
+
+    // ── Psychology block ──
+    const psychologyBlock = psychology ? `## TRADER PSYCHOLOGY (Governance Context)
+Process Streak: ${psychology.streak} consecutive 7+ scores
+Weekly Score Average: ${psychology.weeklyAvg !== null ? `${psychology.weeklyAvg.toFixed(1)}/10` : 'No data'}
+Known Weaknesses: ${psychology.weaknesses.length > 0 ? psychology.weaknesses.join(', ') : 'None identified'}
+Current Focus: ${psychology.currentFocus || 'None set'}
+Risk Personality: ${psychology.riskPersonality || 'Unknown'}
+Violations This Week: ${psychology.violationsThisWeek}` : ''
 
     // ── Resolved scenarios block ──
     const resolvedBlock = resolvedScenarios.length > 0
@@ -268,9 +287,21 @@ ${news.avoidTrading ? '\n⚠️ HIGH-IMPACT NEWS IMMINENT — factor this into t
 ### AMD Phase Summary
 ${Object.entries(data.amdPhases).map(([tf, p]) => `- ${tf}: ${p.phase} (${p.confidence}%)`).join('\n')}
 
+## MORNING MEETING: THE DESK PERSONA
+**CRITICAL**: The desk characters (Marcus, Sarah, Ray, Alex) only huddle during POSITION EPISODES (entry or management).
+- If current episode type is 'analysis': Skip the huddle. Set desk_messages to [] and desk_evaluation to null. They are "out of the office."
+- If current episode type is 'position_entry' or 'position_management': They MUST huddle and react to your guidance.
+
+**THEIR PERSPECTIVE**: They are not "lost." They have just read the Narrative, the Scenarios, and your Position Guidance (TP/SL/Confidence). They have full access to the **Story Bible** and any **Active Position history** (adjustments, previous episodes). They must demonstrate this continuity in their dialogue.
+
+- **RAY (Quant):** Cold, clinical. Review the Scenarios and the confirmations (EMA, ADR, ATR). Use 1-2 sharp sentences. No "bullish/bearish" — use "bid/ask depth" or "statistical edge."
+- **SARAH (Risk/Psych):** The iron hand. Cross-reference the TP/SL and Confidence in the guidance against the trader's **Psychology Context**. If the trader has a "fear" weakness and the SL is too tight, she calls it out. Be blunt.
+- **ALEX (Macro):** Connect the trade to the central bank narrative and Fundamental catalysts in the News context. 1 sentence.
+- **MARCUS (PM):** The decider. Review the Season Arc in the **Story Bible**. Does this trade fulfill the character goals? Contrast Sarah's risk check against the potential for a "Season Premiere" win. Final verdict: approved, caution, or blocked.
+
 ## YOUR TASK
 
-Write Episode ${currentEpisodeNumber} of the ${data.pair} story. Respond with this exact JSON structure:
+Write Episode ${currentEpisodeNumber} of the ${data.pair} story AND the Desk's huddle. Respond with this exact JSON structure:
 
 {
   "story_title": "A compelling episode title (like a TV episode name)",
@@ -345,7 +376,7 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story. Respond with th
   },
   "is_season_finale": true | false,
   "position_guidance": {
-    "action": "enter_long" | "enter_short" | "hold" | "adjust" | "close" | "wait",
+    "action": "enter_long" | "enter_short" | "set_limit_long" | "set_limit_short" | "hold" | "adjust" | "close" | "wait",
     "confidence": 0.0-1.0,
     "reasoning": "2-3 sentences explaining why this action is recommended",
     "entry_price": 1.2345,
@@ -361,6 +392,16 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story. Respond with th
     "risk_percent": 1.5,
     "risk_amount": 150.00,
     "favored_scenario_id": "scenario_a"
+  },
+  "desk_messages": [
+    { "speaker": "ray", "message": "Statistical reaction...", "tone": "neutral|positive|cautious|warning", "message_type": "comment" },
+    { "speaker": "sarah", "message": "Risk/Psychology reaction...", "tone": "neutral|positive|cautious|warning", "message_type": "comment|alert|block" },
+    { "speaker": "alex", "message": "Macro reaction...", "tone": "neutral|positive|cautious|warning", "message_type": "comment" },
+    { "speaker": "marcus", "message": "Final verdict summary...", "tone": "neutral|positive|cautious|warning", "message_type": "comment|approval|challenge|block" }
+  ],
+  "desk_evaluation": {
+    "verdict": "approved" | "caution" | "blocked" | "neutral",
+    "reason": "Why the desk reached this verdict"
   }
 }
 
@@ -457,38 +498,18 @@ SCENARIO LEVEL RULES (STRICT — for monitoring bot):
 
 POSITION GUIDANCE RULES (MANDATORY):
 - Every episode MUST include a position_guidance object
-- If no existing position is active: recommend 'enter_long', 'enter_short', or 'wait'
+- If no existing position is active: recommend 'enter_long', 'enter_short', 'set_limit_long', 'set_limit_short', or 'wait'
 - If an existing position is active (see ACTIVE STORY POSITION section above): recommend 'hold', 'adjust', or 'close'
 - 'wait' = conditions not right, tell trader what to watch for in reasoning
-- 'enter_long' or 'enter_short' MUST include entry_price, stop_loss, take_profit_1, suggested_lots, risk_percent, risk_amount
+- 'enter_long' / 'enter_short' = MARKET entry. Use when price is AT the level.
+- 'set_limit_long' / 'set_limit_short' = PENDING LIMIT entry. Use when a scenario trigger is hit but the optimal entry price is different from the current spot price (e.g. "wait for pull back to X").
+- entry_price, stop_loss, take_profit_1, suggested_lots, risk_percent, risk_amount are REQUIRED for any entry action (market or limit)
 - 'adjust' MUST include at least one of: move_stop_to, partial_close_percent, new_take_profit
 - 'close' MUST include close_reason
 - favored_scenario_id must match one of the 2 scenario IDs ("scenario_a" or "scenario_b")
 - entry/SL/TP must come from key_levels or Gemini/DeepSeek analysis — no invented levels
 - If confidence < 0.5, default to 'wait' unless an active position needs urgent management
 - Only include fields relevant to the action (e.g., don't include entry_price for 'hold')
-
-POSITION SIZING RULES (when entering):
-- Use the RISK MANAGEMENT & ACCOUNT CONTEXT section (if present) to calculate position size
-- suggested_lots = (account_balance * risk_percent / 100) / (SL_distance_in_pips * pip_value_per_lot)
-- For most pairs, 1 standard lot = 100,000 units, pip value ≈ $10 per pip
-- NEVER exceed max_position_size from risk rules
-- NEVER exceed max_risk_per_trade % from risk rules
-- If account balance is unknown, use risk_percent only (let the trader calculate lots)
-- risk_percent should typically be 1-2% per trade — NEVER more than the max_risk_per_trade rule
-
-TRADER PSYCHOLOGY & POSITION MANAGEMENT RULES (CRITICAL):
-- You must think like the 1% of traders who are consistently profitable
-- LET PROFITS RUN: Do NOT close winning positions too early out of fear. Move SL to breakeven/profit instead
-- CUT LOSSES QUICKLY: If the trade thesis is invalidated, close immediately. Don't hope for recovery
-- NO REVENGE TRADING: After a loss, do NOT recommend entering immediately. Wait for a proper setup
-- SCALE OUT, NOT ALL-IN: Use multiple TPs (TP1, TP2, TP3). Close partial at TP1 to lock profit, let the rest run
-- MOVE SL TO BREAKEVEN after TP1 is hit — this makes the remaining position a "free trade"
-- RESPECT THE SCENARIOS: If the favored scenario is getting invalidated (price approaching invalidation_level), recommend closing or tightening SL — don't hold and hope
-- ACCOUNT PROTECTION: If the trader has open losing trades or is near max_daily_loss, be CONSERVATIVE. Recommend 'wait' or reduce position size
-- DON'T BE AFRAID: If the setup is clear and all conditions align (technical + fundamental + scenarios), have the confidence to recommend entry. Sitting out forever is also a losing strategy
-- DRAWDOWN AWARENESS: If unrealized P&L is significantly negative, factor this into position sizing and confidence
-- TRAILING STOPS: For strong trends, recommend moving SL behind structure (swing lows for longs, swing highs for shorts) rather than using fixed levels
 
 INTELLIGENCE INTEGRATION RULES:
 - You are BOTH a technical analyst AND an economist/fundamentalist
@@ -501,37 +522,26 @@ INTELLIGENCE INTEGRATION RULES:
 
 SCENARIO ANALYSIS INTEGRATION RULES (CRITICAL FOR ACCURACY):
 If a "SCENARIO ANALYSIS CONTEXT" section is present above, it contains a pre-computed institutional-grade weekly report for this pair. You MUST deeply integrate it:
-- **Align your scenarios**: Your 2 story scenarios should be CONSISTENT with the institutional scenarios. If the Scenario Analysis says the highest-probability scenario is bearish, your primary scenario should reflect that unless your fresh Gemini/DeepSeek data contradicts it — and if it does, you MUST explain the divergence in the narrative.
-- **Use its validated levels**: The key levels, liquidity pools, and watchlist levels in the Scenario Analysis have been validated through a separate tri-model pipeline. PREFER these levels for your trigger_level, invalidation_level, entries, stop_losses, and take_profits. They are pre-validated and grounded.
-- **Incorporate institutional narratives**: The institutional scenarios describe who is trapped and where smart money is targeting. Weave this into your buyer/seller character analysis — e.g., "Sellers are trapped above 1.2350, and smart money is likely targeting the liquidity pool at 1.2280."
-- **Reference impact factors**: USD strength direction, risk sentiment, session dynamics, and correlated pair signals from the Scenario Analysis must inform your narrative. These are the WHY behind the price action.
-- **Use conditional patterns**: If the Scenario Analysis includes historical "IF X THEN Y" patterns, reference the relevant ones when conditions are met or approaching.
-- **Respect the avoid list**: If the Scenario Analysis flags conditions to avoid trading, mention these as risk factors in your narrative.
-- **Convergence/Divergence**: Explicitly state whether your fresh analysis CONVERGES or DIVERGES with the Scenario Analysis. Convergence = higher confidence. Divergence = narrative tension point that the trader must resolve.
-- **NEVER contradict validated levels silently**: If you disagree with a Scenario Analysis level, say so explicitly and explain why based on fresh data.
+- **Align your scenarios**: Your 2 story scenarios should be CONSISTENT with the institutional scenarios.
+- **Use its validated levels**: PREFER levels from the Scenario Analysis for your trigger_level, invalidation_level, entries, stop_losses, and take_profits.
+- **Incorporate institutional narratives**: Weave buyer/seller character analysis into the "trapped traders" or "smart money targets" identified in the report.
+- **Respect the avoid list**: Mention any "avoid trading" factors as narrative risks.
+- **Divergence**: Explicitly state if your fresh data diverged from the weekly report.
 
 BIBLE UPDATE RULES:
-- arc_summary: Write the FULL arc from episode 1 to now (replaces previous). This is your 'Previously on...' memory buffer — keep it tight but informative for FUTURE episodes so we don't need to read old narratives.
+- arc_summary: Write the FULL arc from episode 1 to now. This is your 'Previously on...' memory buffer.
 - key_events: Include significant plot points. Highlight which scenarios played a role. Cap at 15.
-- trade_history_summary: Comprehensive recap of ALL positions taken across all seasons. Include season/episode references when available (e.g., "Opened long in S1E5, closed in S1E8 for +40 pips"). This builds the trader's personal journey within the story.
+- trade_history_summary: Comprehensive recap of ALL positions taken across all seasons. Link events to specific episodes.
 - unresolved_threads: All narrative/market threads that are STILL active.
 - resolved_threads: Anything resolved in THIS episode.
-- dominant_themes: The 3-5 main themes of this pair's story.
 
 SEASON RULES (TRADE-CYCLE DRIVEN):
-- Seasons = trade cycles. You do NOT decide when seasons end.
-- is_season_finale must ALWAYS be false. The system handles season endings (when a trade closes or the trader skips).
-- Focus on THIS episode's task based on the EPISODE TYPE section above.
-- For ANALYSIS episodes: provide 2 directional market scenarios
-- For POSITION_ENTRY episodes: provide entry details + 2 management scenarios
-- For POSITION_MANAGEMENT episodes: assess position + provide 2 new management scenarios (or 0 if closing)`
+- Seasons = trade cycles. They end when a trade closes or is skipped.
+- is_season_finale must ALWAYS be false. The system handles the transition.
+- For ANALYSIS episodes: provide 2 directional market scenarios.
+- For POSITION_ENTRY episodes: provide entry details based on the triggered scenario + 2 management scenarios.
+- For POSITION_MANAGEMENT episodes: assess the live OANDA position + provide 2 new management scenarios (or 0 if closing).`;
 }
-
-/**
- * Build the narrator prompt split into cacheable prefix and dynamic content.
- * The prefix (identity + rules + schema) stays stable across pairs → cache hits on sequential runs.
- * The dynamic part (Gemini/DeepSeek output + market data + Bible + episodes) changes per pair.
- */
 export function buildStoryNarratorPromptCached(
     data: StoryDataPayload,
     geminiOutput: string,
@@ -548,6 +558,7 @@ export function buildStoryNarratorPromptCached(
     riskContext?: string | null,
     episodeType?: EpisodeType,
     triggeredScenario?: { title: string; direction: string; trigger_level: number; trigger_direction: string; trigger_timeframe: string } | null,
+    psychology?: PsychologyContext | null,
 ): { cacheablePrefix: string; dynamicPrompt: string } {
     // Get the full prompt and split it
     const fullPrompt = buildStoryNarratorPrompt(
@@ -559,7 +570,8 @@ export function buildStoryNarratorPromptCached(
         activePosition,
         riskContext,
         episodeType,
-        triggeredScenario
+        triggeredScenario,
+        psychology
     )
 
     // Split at "## CURRENT DATA" — everything before is relatively stable (identity + Bible + rules)

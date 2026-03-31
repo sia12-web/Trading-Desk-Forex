@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-        message: 'Disabled — episodes are event-driven (scenario monitor + manual)',
+        message: 'Retired — episodes are now event-driven (scenario monitor + manual).',
         processed: 0,
     })
 }

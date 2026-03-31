@@ -75,7 +75,7 @@ export type EpisodeType = 'analysis' | 'position_entry' | 'position_management'
 // ── Position Guidance (AI-guided trading across episodes) ──
 
 export interface PositionGuidance {
-    action: 'enter_long' | 'enter_short' | 'hold' | 'adjust' | 'close' | 'wait'
+    action: 'enter_long' | 'enter_short' | 'set_limit_long' | 'set_limit_short' | 'hold' | 'adjust' | 'close' | 'wait'
     confidence: number  // 0-1, how confident in this recommendation
     reasoning: string   // 2-3 sentences explaining why
     // Entry details (when action is enter_long/enter_short)
@@ -151,6 +151,16 @@ export interface StoryResult {
     }
     is_season_finale: boolean // AI decides if the current narrative arc/season should end
     position_guidance: PositionGuidance
+    desk_messages?: Array<{
+        speaker: 'ray' | 'sarah' | 'alex' | 'marcus'
+        message: string
+        message_type: 'comment' | 'alert' | 'block' | 'approval' | 'challenge'
+        tone: 'positive' | 'negative' | 'neutral' | 'warning'
+    }>
+    desk_evaluation?: {
+        verdict: 'approved' | 'caution' | 'blocked' | 'neutral'
+        reason: string
+    }
 }
 
 // ── News Context ──

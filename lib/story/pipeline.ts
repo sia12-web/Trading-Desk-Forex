@@ -29,8 +29,7 @@ import { getActivePosition, createPosition, updatePosition, addAdjustment, getAd
 import { getOandaDemoConfig } from '@/lib/oanda/account'
 import type { OandaAccountSummary } from '@/lib/types/oanda'
 import type { ActivePositionContext } from './prompts/claude-narrator'
-import { generatePositionEntryReaction, generatePositionManagementReaction, triggerAutoProcessScore } from '@/lib/desk/story-reactions'
-import type { StoryReactionContext } from '@/lib/desk/story-reactions'
+import { triggerAutoProcessScore, getMinimalPsychologyContext } from '@/lib/desk/story-reactions'
 import type { StoryResult, PositionGuidance, EpisodeType } from './types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -112,7 +111,7 @@ export async function generateStory(
         // ── Step 3: Load continuity context (Bible + last episode + resolved scenarios) ──
         await updateProgress(taskId, 25, 'Loading story history...', client)
 
-        const [bible, lastEpisodeRaw, resolvedScenarios, seasonArchive, scenarioAnalysisContext, scenarioAnalysisRaw, existingPosition] = await Promise.all([
+        const [bible, lastEpisodeRaw, resolvedScenarios, seasonArchive, scenarioAnalysisContext, scenarioAnalysisRaw, existingPosition, psychologyRaw] = await Promise.all([
             getBible(userId, pair, client),
             getLatestEpisode(userId, pair, client),
             getRecentlyResolvedScenarios(userId, pair, 10, client),
@@ -120,7 +119,10 @@ export async function generateStory(
             getLatestScenarioAnalysisForPrompt(userId, pair, client),
             getLatestScenarioAnalysis(userId, pair, client),
             getActivePosition(userId, pair, client),
+            getMinimalPsychologyContext(userId, client),
         ])
+
+        const psychology = psychologyRaw as Awaited<ReturnType<typeof getMinimalPsychologyContext>>
 
         // Build active position context for narrator
         let activePositionCtx: ActivePositionContext | null = null
@@ -250,7 +252,8 @@ export async function generateStory(
             activePositionCtx,
             riskContextBlock,
             episodeType,
-            triggeredScenario
+            triggeredScenario,
+            psychology
         )
         const claudeOutput = await callClaudeWithCaching(cacheablePrefix, dynamicPrompt, {
             timeout: 180_000,
@@ -370,19 +373,26 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
             )
         }
 
-        // ── Step 7c-bis: Fire desk reaction (non-blocking) ──
-        if (result.position_guidance && (episodeType === 'position_entry' || episodeType === 'position_management')) {
-            const reactionCtx: StoryReactionContext = {
-                userId, pair, episodeId: episode.id, episodeNumber, seasonNumber,
-                episodeType, currentPrice: data.currentPrice, atr14: data.atr14,
+        // ── Step 7c-bis: Store unified desk reaction (from Claude output) ──
+        if (result.desk_messages && result.desk_messages.length > 0) {
+            console.log(`${TAG} [Desk] Storing ${result.desk_messages.length} unified messages...`)
+            const contextData = {
+                episode_id: episode.id,
+                episode_number: episodeNumber,
+                season_number: seasonNumber,
+                pair: pair,
+                reaction_type: episodeType === 'position_entry' ? 'position_entry' : 'position_management',
             }
-            if (episodeType === 'position_entry') {
-                generatePositionEntryReaction(reactionCtx, result.position_guidance, result.story_title, client)
-                    .catch(err => console.error(`${TAG} [DeskReaction] Entry reaction failed:`, err instanceof Error ? err.message : err))
-            } else {
-                generatePositionManagementReaction(reactionCtx, result.position_guidance, result.story_title, client)
-                    .catch(err => console.error(`${TAG} [DeskReaction] Mgmt reaction failed:`, err instanceof Error ? err.message : err))
-            }
+
+            await client.from('desk_messages').insert(
+                result.desk_messages.map(m => ({
+                    user_id: userId,
+                    speaker: m.speaker,
+                    message: m.message,
+                    message_type: m.message_type || 'comment',
+                    context_data: contextData,
+                }))
+            )
         }
 
         // ── Step 7d: Update Story Bible ──
@@ -476,15 +486,20 @@ async function processPositionGuidance(
     try {
         const { action } = guidance
 
-        // ── Enter new position ──
-        if ((action === 'enter_long' || action === 'enter_short') && !existingPosition) {
+        // ── Enter new position (Market or Limit) ──
+        const isEntry = action === 'enter_long' || action === 'enter_short' || action === 'set_limit_long' || action === 'set_limit_short'
+        if (isEntry && !existingPosition) {
             if (!guidance.entry_price || !guidance.stop_loss) {
-                console.warn('[Story Position] enter action missing entry_price or stop_loss, skipping')
+                console.warn('[Story Position] entry action missing entry_price or stop_loss, skipping')
                 return
             }
+
+            const direction = (action === 'enter_long' || action === 'set_limit_long') ? 'long' : 'short'
+            const isLimit = action === 'set_limit_long' || action === 'set_limit_short'
+
             const position = await createPosition(userId, pair, {
                 season_number: seasonNumber,
-                direction: action === 'enter_long' ? 'long' : 'short',
+                direction,
                 entry_episode_id: episodeId,
                 entry_episode_number: episodeNumber,
                 suggested_entry: guidance.entry_price,
@@ -495,6 +510,14 @@ async function processPositionGuidance(
                 current_take_profit_2: guidance.take_profit_2,
                 current_take_profit_3: guidance.take_profit_3,
             }, client)
+
+            // If it's a market entry, we can mark it active immediately (or keep as suggested for manual approval)
+            // Given the "Human in the loop" rule, we'll keep it as 'suggested' first, but log clearly.
+            if (!isLimit) {
+                await updatePosition(position.id, { status: 'active', entry_price: guidance.entry_price }, client)
+            } else {
+                await updatePosition(position.id, { status: 'suggested' }, client)
+            }
 
             await addAdjustment({
                 position_id: position.id,

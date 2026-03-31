@@ -78,8 +78,8 @@ Three specialized AI models work in sequence — **all must succeed or the opera
 ### Daily Workflow
 
 ```
-4:00 AM UTC  →  Intelligence Agents run (4 agents per subscribed pair)
-5:00 AM UTC  →  Story episodes auto-generate (using agent intelligence)
+4:00 AM UTC  →  Intelligence Agents run (4 agents per pair)
+Event-Driven  →  Story generation triggers ONLY when Scenario Monitor hits a price trigger or position requires management.
 Every 15 min →  Scenario Monitor checks live prices vs active triggers
 
 User wakes up:
@@ -138,8 +138,9 @@ All fetched in parallel:
 - **Resolved scenarios** — last 10 that triggered/invalidated
 - **Season archive** — past season summaries for cross-season memory
 - **Latest scenario analysis** — weekly institutional report
-- **Active position** — current AI-tracked position for this pair
+- **Active position** — current AI-tracked position + adjustment history
 - **Risk context** — user's risk rules + OANDA account balance/margin
+- **Psychology context** — trader's streak, focus area, and violations
 
 #### Step 5 — Gemini Structural Analysis (35%)
 
@@ -202,9 +203,17 @@ Inputs:
 - `confidence` — 0 to 1
 - `bible_update` — updated arc summary, key events, character evolution, threads
 - `is_season_finale` — AI decides based on narrative arc completion
-- `position_guidance` — enter_long/enter_short/hold/adjust/close/wait with precise levels
+- `position_guidance` — enter_long/enter_short/set_limit_long/set_limit_short/hold/adjust/close/wait with precise levels
+- `desk_messages` — Unified Morning Meeting huddle with Ray, Sarah, Alex, and Marcus (Position Episodes only)
+- `desk_evaluation` — Final PM verdict (approved/caution/blocked) and institutional reasoning
 
-**Prompt caching**: The narrator prompt is split at `## CURRENT DATA` — everything before (identity + rules + Bible + history) is cached, everything after (Gemini/DeepSeek/market data) is dynamic. ~90% cache hit rate.
+**Unified Desk Characters**:
+- **RAY (Quant)**: Statistical edge, candle confirmations (EMA/ADR/ATR), clinical tone.
+- **SARAH (Risk)**: The iron hand. Cross-references guidance against trader's **Psychology Context** (slumps/violations/weaknesses).
+- **ALEX (Macro)**: Connects trade to central bank narratives and key fundamental catalysts.
+- **MARCUS (PM)**: The decider. Reviews the Bible's season arc and gives the final verdict.
+
+**Prompt caching**: The narrator prompt is split at `## CURRENT DATA` — everything before (identity + rules + Bible + history) is cached. ~90% cache hit rate.
 
 #### Step 8 — Validate and Store (85-100%)
 
@@ -314,7 +323,8 @@ Lifecycle: suggested → active → partial_closed → closed
 
 | Guidance | Action |
 |----------|--------|
-| `enter_long` / `enter_short` | Creates position + "open" adjustment |
+| `enter_long` / `enter_short` | Creates position (status: 'active') + 'open' adjustment |
+| `set_limit_long` / `set_limit_short` | Creates position (status: 'suggested') + 'pending' adjustment |
 | `adjust` | Updates SL/TP + records adjustment |
 | `close` | Marks position closed + records adjustment |
 | `hold` | Records "hold" for journey tracking |
@@ -980,9 +990,8 @@ All scheduled via Supabase `pg_cron` + `pg_net`. Authenticated with `Bearer CRON
 | Job | Schedule | Endpoint | Purpose |
 |-----|----------|----------|---------|
 | Scenario Analysis | Mon 3:30 AM UTC | `/api/cron/scenario-analysis` | Weekly institutional scenario report |
-| Story Agents | 4:00 AM Mon-Fri | `/api/cron/story-agents` | 4 intelligence agents per subscribed pair |
-| Story Generation | 5:00 AM Mon-Fri | `/api/cron/story-generation` | Auto-generate episodes for all subscriptions |
-| Scenario Monitor | Every 15 min | `/api/cron/scenario-monitor` | Check active scenarios vs live OANDA prices |
+| Story Agents | 4:00 AM Mon-Fri | `/api/cron/story-agents` | 4 intelligence agents per pair |
+| Scenario Monitor | Every 15 min | `/api/cron/scenario-monitor` | Check scenarios + Trigger Story (Event-Driven) |
 
 ---
 

@@ -137,7 +137,6 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 |----------|----------|---------|
 | `/api/cron/scenario-analysis` | **Mon 3:30 AM UTC** | Weekly institutional scenario analysis per pair |
 | `/api/cron/story-agents` | **4:00 AM UTC Mon-Fri** | Daily intelligence agents (Optimizer, News, Cross-Market) |
-| `/api/cron/story-generation` | **5:00 AM UTC Mon-Fri** | Daily episode generation for subscribed pairs |
 | `/api/cron/scenario-monitor` | **Every 15 min** | Check active scenarios vs OANDA prices, auto-resolve |
 
 ### Utilities

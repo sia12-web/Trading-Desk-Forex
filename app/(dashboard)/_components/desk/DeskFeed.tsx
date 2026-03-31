@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, Sparkles, Coffee } from 'lucide-react'
+import { Loader2, Sparkles, Coffee, Trash2 } from 'lucide-react'
 import { useBackgroundTask } from '@/lib/hooks/use-background-task'
 import { MessageBubble } from './MessageBubble'
 import type { DeskMessage } from '@/lib/desk/types'
@@ -71,6 +71,30 @@ export function DeskFeed() {
         await startTask('/api/desk/meeting')
     }
 
+    async function handleResetMemory() {
+        if (!confirm('Are you sure you want to reset ALL AI memory? This will delete the current season, story bible, and desk history. This cannot be undone.')) {
+            return
+        }
+
+        try {
+            setLoading(true)
+            const res = await fetch('/api/system/reset-memory', { method: 'POST' })
+            const data = await res.json()
+            if (data.success) {
+                setMessages([])
+                setTodayMeetingExists(false)
+                alert('System memory reset successfully. You now have a blank canvas.')
+            } else {
+                alert('Failed to reset memory: ' + (data.error || 'Unknown error'))
+            }
+        } catch (err) {
+            console.error('Reset memory failed:', err)
+            alert('An error occurred during reset.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const isGenerating = taskStatus === 'running'
 
     return (
@@ -81,28 +105,38 @@ export function DeskFeed() {
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <h2 className="text-base font-black text-white uppercase tracking-wider">Desk Feed</h2>
                 </div>
-                <button
-                    onClick={handleGenerateMeeting}
-                    disabled={isGenerating}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-700 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all active:scale-95"
-                >
-                    {isGenerating ? (
-                        <>
-                            <Loader2 size={14} className="animate-spin" />
-                            Generating...
-                        </>
-                    ) : todayMeetingExists ? (
-                        <>
-                            <Coffee size={14} />
-                            New Session
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles size={14} />
-                            Morning Meeting
-                        </>
-                    )}
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleResetMemory}
+                        disabled={isGenerating || loading}
+                        title="Reset All AI Memory"
+                        className="p-2 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                    <button
+                        onClick={handleGenerateMeeting}
+                        disabled={isGenerating || loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-700 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all active:scale-95"
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 size={14} className="animate-spin" />
+                                Generating...
+                            </>
+                        ) : todayMeetingExists ? (
+                            <>
+                                <Coffee size={14} />
+                                New Session
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles size={14} />
+                                Morning Meeting
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Progress bar during generation */}

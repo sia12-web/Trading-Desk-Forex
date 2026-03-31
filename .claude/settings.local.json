@@ -74,7 +74,11 @@
       "Bash(echo:*)",
       "Bash(npm config get:*)",
       "Bash(git remote set-url:*)",
-      "Bash(long enough to catch big trends, cut noise fast, compound asymmetric outcomes.\"\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(long enough to catch big trends, cut noise fast, compound asymmetric outcomes.\"\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(if not exist \"C:\\\\Users\\\\shahb\\\\myApplications\\\\Trade Desk-Stocks\\\\supabase\\\\migrations\" mkdir \"C:\\\\Users\\\\shahb\\\\myApplications\\\\Trade Desk-Stocks\\\\supabase\\\\migrations\")",
+      "Bash(powershell -Command:*)",
+      "Bash(powershell -NoProfile -Command \"$f = ''C:\\\\Users\\\\shahb\\\\.claude\\\\projects\\\\C--Users-shahb-myApplications-Trade-Desk-Forex\\\\5a98b646-876c-45f3-94c1-530e2a2d88d1.jsonl''; $sr = [System.IO.StreamReader]::new\\($f\\); $all = @\\(\\); while\\($null -ne \\($l = $sr.ReadLine\\(\\)\\)\\){ $all += $l }; $sr.Close\\(\\); Write-Output $all[-1].Substring\\(0, [Math]::Min\\($all[-1].Length, 5000\\)\\)\")",
+      "Bash(python3:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

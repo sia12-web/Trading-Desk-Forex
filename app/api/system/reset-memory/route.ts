@@ -26,6 +26,9 @@ export async function POST() {
             'story_seasons',
             'story_agent_reports',
             'pair_subscriptions',
+            'desk_messages',
+            'process_scores',
+            'desk_state',
             'cms_analyses',
             'scenario_analyses',
             'indicator_optimizations',
@@ -59,7 +62,7 @@ export async function POST() {
 
         // Categorize results for response
         const categories = {
-            story: ['story_position_adjustments', 'story_scenarios', 'story_positions', 'story_episodes', 'story_bibles', 'story_seasons', 'story_agent_reports', 'pair_subscriptions'],
+            story: ['story_position_adjustments', 'story_scenarios', 'story_positions', 'story_episodes', 'story_bibles', 'story_seasons', 'story_agent_reports', 'pair_subscriptions', 'desk_messages', 'process_scores', 'desk_state'],
             cms: ['cms_analyses', 'scenario_analyses'],
             analysis_cache: ['indicator_optimizations', 'structural_analysis_cache', 'wave_analysis', 'big_picture_analysis', 'technical_analyses'],
         }

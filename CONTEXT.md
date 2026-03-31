@@ -1,4 +1,4 @@
-# TradeDesk Forex — System Context
+# TradeDesk CFD — System Context
 
 > **Purpose**: Complete reference for every subsystem. Read this before implementing any feature.
 

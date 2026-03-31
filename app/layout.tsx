@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TradeDesk Forex | Professional Trading Journal",
-  description: "Precision trading journal and institutional-grade risk management companion for technical analysts.",
+  title: "TradeDesk CFD | Professional Trading Terminal",
+  description: "Institutional-grade AI trading terminal for forex pairs and CFD indices.",
 };
 
 export default function RootLayout({

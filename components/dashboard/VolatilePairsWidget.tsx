@@ -7,6 +7,7 @@ import Link from 'next/link'
 interface VolatilePair {
     instrument: string
     name: string
+    type: 'forex' | 'index'
     volatility: number
     price: number
     change1d: number
@@ -110,9 +111,16 @@ export function VolatilePairsWidget() {
                                     {pair.change1d >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                 </div>
                                 <div>
-                                    <h4 className="font-black text-xs text-white tracking-tight group-hover/item:text-orange-400 transition-colors uppercase">{pair.name}</h4>
+                                    <div className="flex items-center gap-1.5">
+                                        <h4 className="font-black text-xs text-white tracking-tight group-hover/item:text-orange-400 transition-colors uppercase">{pair.name}</h4>
+                                        {pair.type === 'index' && (
+                                            <span className="text-[8px] font-black text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md uppercase tracking-wider">IDX</span>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <p className="text-[10px] font-mono text-neutral-500 font-bold">{pair.price.toFixed(5)}</p>
+                                        <p className="text-[10px] font-mono text-neutral-500 font-bold">
+                                            {pair.type === 'index' ? pair.price.toFixed(1) : pair.price.toFixed(5)}
+                                        </p>
                                         <span className={`text-[9px] font-black ${pair.change1d >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
                                             {pair.change1d >= 0 ? '+' : ''}{pair.change1d.toFixed(2)}%
                                         </span>

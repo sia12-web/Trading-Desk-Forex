@@ -148,6 +148,15 @@ export async function generateStory(
             }
         }
 
+        // ── Volatility Gate: block position entries when market is too quiet ──
+        // If volatility is "cold" (ATR14/ATR50 < 0.7), there's not enough movement
+        // to justify risk. Downgrade to analysis — the AI will still analyze but
+        // won't recommend entries in a dead market.
+        if (episodeType === 'position_entry' && data.volatilityStatus === 'cold') {
+            console.log(`${TAG} [VolatilityGate] ${pair} volatility is COLD (ratio: ${data.atrRatio.toFixed(2)}) — downgrading position_entry → analysis`)
+            episodeType = 'analysis'
+        }
+
         // Load triggered scenario details for prompt context
         let triggeredScenario: {
             title: string

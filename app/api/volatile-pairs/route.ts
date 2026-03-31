@@ -1,27 +1,34 @@
 import { NextResponse } from 'next/server'
 import { getCandles } from '@/lib/oanda/client'
 
-const FX_PAIRS = [
-    { instrument: 'EUR_USD', name: 'EUR/USD' },
-    { instrument: 'USD_JPY', name: 'USD/JPY' },
-    { instrument: 'GBP_USD', name: 'GBP/USD' },
-    { instrument: 'AUD_USD', name: 'AUD/USD' },
-    { instrument: 'USD_CAD', name: 'USD/CAD' },
-    { instrument: 'USD_CHF', name: 'USD/CHF' },
-    { instrument: 'NZD_USD', name: 'NZD/USD' },
-    { instrument: 'EUR_GBP', name: 'EUR/GBP' },
-    { instrument: 'EUR_JPY', name: 'EUR/JPY' },
-    { instrument: 'GBP_JPY', name: 'GBP/JPY' },
-    { instrument: 'AUD_JPY', name: 'AUD/JPY' },
-    { instrument: 'EUR_AUD', name: 'EUR/AUD' },
-    { instrument: 'GBP_AUD', name: 'GBP/AUD' },
-    { instrument: 'XAU_USD', name: 'Gold' },
-    { instrument: 'USO_USD', name: 'WTI Oil' },
+const INSTRUMENTS = [
+    // Forex
+    { instrument: 'EUR_USD', name: 'EUR/USD', type: 'forex' as const },
+    { instrument: 'USD_JPY', name: 'USD/JPY', type: 'forex' as const },
+    { instrument: 'GBP_USD', name: 'GBP/USD', type: 'forex' as const },
+    { instrument: 'AUD_USD', name: 'AUD/USD', type: 'forex' as const },
+    { instrument: 'USD_CAD', name: 'USD/CAD', type: 'forex' as const },
+    { instrument: 'USD_CHF', name: 'USD/CHF', type: 'forex' as const },
+    { instrument: 'NZD_USD', name: 'NZD/USD', type: 'forex' as const },
+    { instrument: 'EUR_GBP', name: 'EUR/GBP', type: 'forex' as const },
+    { instrument: 'EUR_JPY', name: 'EUR/JPY', type: 'forex' as const },
+    { instrument: 'GBP_JPY', name: 'GBP/JPY', type: 'forex' as const },
+    { instrument: 'AUD_JPY', name: 'AUD/JPY', type: 'forex' as const },
+    { instrument: 'EUR_AUD', name: 'EUR/AUD', type: 'forex' as const },
+    { instrument: 'GBP_AUD', name: 'GBP/AUD', type: 'forex' as const },
+    { instrument: 'XAU_USD', name: 'Gold', type: 'forex' as const },
+    { instrument: 'USO_USD', name: 'WTI Oil', type: 'forex' as const },
+    // CFD Indices
+    { instrument: 'NAS100_USD', name: 'Nasdaq 100', type: 'index' as const },
+    { instrument: 'SPX500_USD', name: 'S&P 500', type: 'index' as const },
+    { instrument: 'US30_USD', name: 'Dow Jones 30', type: 'index' as const },
+    { instrument: 'DE30_EUR', name: 'DAX 40', type: 'index' as const },
 ]
 
 interface PairVolatility {
     instrument: string
     name: string
+    type: 'forex' | 'index'
     volatility: number // Percentage: (High-Low)/Close * 100
     price: number
     change1d: number
@@ -31,20 +38,20 @@ export async function GET() {
     try {
         const results: PairVolatility[] = []
 
-        for (const pair of FX_PAIRS) {
+        for (const item of INSTRUMENTS) {
             try {
-                const data = await fetchPairVolatility(pair.instrument, pair.name)
+                const data = await fetchPairVolatility(item.instrument, item.name, item.type)
                 if (data) results.push(data)
                 await new Promise(resolve => setTimeout(resolve, 100))
             } catch (err) {
-                console.error(`Failed to fetch volatility for ${pair.name}:`, err)
+                console.error(`Failed to fetch volatility for ${item.name}:`, err)
             }
         }
 
-        // Sort by volatility descending and take top 6
+        // Sort by volatility descending and take top 8
         const topVolatile = results
             .sort((a, b) => b.volatility - a.volatility)
-            .slice(0, 6)
+            .slice(0, 8)
 
         return NextResponse.json({
             pairs: topVolatile,
@@ -56,11 +63,11 @@ export async function GET() {
     }
 }
 
-async function fetchPairVolatility(instrument: string, name: string): Promise<PairVolatility | null> {
-    const { data: candles, error } = await getCandles({ 
-        instrument, 
-        granularity: 'D', 
-        count: 2 
+async function fetchPairVolatility(instrument: string, name: string, type: 'forex' | 'index'): Promise<PairVolatility | null> {
+    const { data: candles, error } = await getCandles({
+        instrument,
+        granularity: 'D',
+        count: 2
     })
 
     if (error || !candles || candles.length < 1) return null
@@ -78,6 +85,7 @@ async function fetchPairVolatility(instrument: string, name: string): Promise<Pa
     return {
         instrument,
         name,
+        type,
         volatility,
         price: close,
         change1d

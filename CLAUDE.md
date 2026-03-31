@@ -1,4 +1,4 @@
-# TradeDesk Forex — Project Instructions
+# TradeDesk CFD — Project Instructions
 
 ## System Context (MANDATORY)
 

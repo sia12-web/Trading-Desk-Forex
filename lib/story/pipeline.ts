@@ -55,6 +55,7 @@ export async function generateStory(
         generationSource?: 'manual' | 'cron' | 'bot'
         triggeredScenarioId?: string
         triggeredEpisodeId?: string
+        isInvalidation?: boolean
     }
 ): Promise<void> {
     const client: SupabaseClient = options?.useServiceRole
@@ -192,7 +193,7 @@ export async function generateStory(
 
         // ── Determine episode type based on lifecycle ──
         let episodeType: EpisodeType = 'analysis'
-        if (options?.triggeredScenarioId && lastEpisodeRaw) {
+        if (options?.triggeredScenarioId && lastEpisodeRaw && !options.isInvalidation) {
             const lastType = (lastEpisodeRaw.episode_type as EpisodeType) || 'analysis'
             if (lastType === 'analysis') {
                 episodeType = 'position_entry'
@@ -316,7 +317,8 @@ export async function generateStory(
             riskContextBlock,
             episodeType,
             triggeredScenario,
-            psychology
+            psychology,
+            options?.isInvalidation
         )
         const claudeOutput = await callClaudeWithCaching(cacheablePrefix, dynamicPrompt, {
             timeout: 180_000,

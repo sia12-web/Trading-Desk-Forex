@@ -73,6 +73,7 @@ export function buildStoryNarratorPrompt(
     episodeType?: EpisodeType,
     triggeredScenario?: { title: string; direction: string; trigger_level: number; trigger_direction: string; trigger_timeframe: string } | null,
     psychology?: PsychologyContext | null,
+    isInvalidation?: boolean
 ): string {
     // ── Season Archive block (deep cross-season memory) ──
     const archiveBlock = seasonArchive && seasonArchive.length > 0
@@ -113,6 +114,9 @@ ${(bible.unresolved_threads as Array<{ thread: string; introduced_episode: numbe
 ).join('\n') || 'None'}
 
 **Dominant Themes:** ${bible.dominant_themes?.join(', ') || 'None established'}
+
+**Lessons Learned (Strategic Memory):**
+${bible.lessons_learned?.map((l: string) => `- ${l}`).join('\n') || 'No lessons recorded yet. Be the first to analyze a failure.'}
 
 **Episodes so far:** ${bible.episode_count}`
         : `## STORY BIBLE (Full Arc Memory)
@@ -229,9 +233,24 @@ Your job: assess the current position and recommend the next action.
 - If the trade is going well: 'hold' (keep SL/TP) or 'adjust' (move SL to breakeven, trail SL, partial close, move TP)
 - If the trade thesis is dead or target hit: 'close' with clear close_reason
 - If recommending 'hold' or 'adjust': provide 2 new management scenarios for the next phase of the trade
-- If recommending 'close': provide 0 scenarios (the season will end when the trade closes)
+- If recommending 'close': provide 0 scenarios (the season will end when the trade closes). **LEARNING TASK**: If closing a LOSING trade, explain what went wrong and how the "Desk" successfully (or unsuccessfully) kept the loss small. Acknowledge if our high confidence entry was a mistake.
 - NEVER recommend 'enter_long' or 'enter_short' during position management — the trader already has a position`
     }
+ 
+     if (isInvalidation) {
+         const scenarioTitle = triggeredScenario ? `"${triggeredScenario.title}"` : 'Your previous analysis'
+         episodeTypeBlock = `## EPISODE TYPE: NARRATIVE RESET (INVALIDATION RECOVERY)
+ ⚠️ **CRITICAL CONTEXT**: ${scenarioTitle} was **INVALIDATED**. Price action went directly against your thesis and broke through the invalidation level.
+ 
+ **YOUR META-LEARNING TASK**:
+ 1. **Analyze the Failure**: Why was your confidence misplaced? Did you ignore the Volatility state? Did a fundamental catalyst shift the bias?
+ 2. **Reflect for the Trader**: Acknowledge the "Desk's" mistake in the narrative. This builds trust.
+ 3. **Record a Lesson**: In your JSON output, provide a concise, strategic "lesson_learned" to be added to the Bible.
+ 4. **Reset the Bias**: Provide 2 NEW directional scenarios for the fresh market structure.
+ 5. **Position Guidance**: MUST be 'wait'. We are back to the drawing board.
+ 
+ **ANTI-HALLUCINATION**: Do NOT invent news or price levels. Rely ONLY on the provided Market Context, Bible history, and Intelligence agents.`
+     }
 
     const assetConfig = getAssetConfig(data.pair)
     const assetContextNote = assetConfig.type === 'cfd_index'
@@ -397,7 +416,8 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story AND the Desk's h
       {"thread": "Thread name", "introduced_episode": 1, "resolved_episode": ${currentEpisodeNumber}, "outcome": "How this thread resolved"}
     ],
     "dominant_themes": ["Theme 1", "Theme 2"],
-    "trade_history_summary": "Concise summary of ALL trades the user has taken on this pair across all seasons — which episodes they entered, exited, won, lost. This is the trader's personal journey within the story."
+    "trade_history_summary": "Concise summary of ALL trades the user has taken on this pair across all seasons — which episodes they entered, exited, won, lost. This is the trader's personal journey within the story.",
+    "lessons_learned": ["Lesson 1: Why we failed last time", "Lesson 2: What we learned about this instrument."]
   },
   "is_season_finale": true | false,
   "position_guidance": {
@@ -495,7 +515,7 @@ IMPORTANT RULES:
 - Key levels must be precise prices from the analysis
 - Reference AMD phases naturally in the narrative
 - If previous episodes exist, maintain continuity (reference what happened before)
-- If scenarios were recently resolved, acknowledge the outcomes in your narrative
+- If scenarios were recently resolved, acknowledge the outcomes in your narrative. **ESPECIALLY** if they were high-confidence failures (e.g. you had >75% probability and it was invalidated).
 - If season archive exists, reference past seasons when relevant (callbacks enrich the story)
 - The story should help the trader UNDERSTAND the market, not just give signals
 
@@ -584,6 +604,7 @@ export function buildStoryNarratorPromptCached(
     episodeType?: EpisodeType,
     triggeredScenario?: { title: string; direction: string; trigger_level: number; trigger_direction: string; trigger_timeframe: string } | null,
     psychology?: PsychologyContext | null,
+    isInvalidation?: boolean
 ): { cacheablePrefix: string; dynamicPrompt: string } {
     // Get the full prompt and split it
     const fullPrompt = buildStoryNarratorPrompt(
@@ -596,7 +617,8 @@ export function buildStoryNarratorPromptCached(
         riskContext,
         episodeType,
         triggeredScenario,
-        psychology
+        psychology,
+        isInvalidation
     )
 
     // Split at "## CURRENT DATA" — everything before is relatively stable (identity + Bible + rules)

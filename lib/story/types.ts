@@ -157,7 +157,8 @@ export interface StoryResult {
         unresolved_threads: Array<{ thread: string; introduced_episode: number; description: string }>
         resolved_threads: Array<{ thread: string; introduced_episode: number; resolved_episode: number; outcome: string }>
         dominant_themes: string[]
-        trade_history_summary: string // Recap of trades, positions, and their outcomes
+        trade_history_summary: string
+        lessons_learned: string[] // Strategic reflections on mistakes and successful setups
     }
     is_season_finale: boolean // AI decides if the current narrative arc/season should end
     position_guidance: PositionGuidance

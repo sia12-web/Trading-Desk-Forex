@@ -39,6 +39,7 @@ export interface StoryBible {
     dominant_themes: string[]
     episode_count: number
     last_episode_number: number
+    lessons_learned: string[]
     created_at: string
     updated_at: string
 }
@@ -51,6 +52,7 @@ export interface BibleUpdate {
     resolved_threads: ResolvedThread[]
     dominant_themes: string[]
     trade_history_summary?: string
+    lessons_learned?: string[]
 }
 
 // ── CRUD ──
@@ -102,6 +104,7 @@ export async function upsertBible(
                 resolved_threads: prunedResolvedThreads,
                 dominant_themes: update.dominant_themes,
                 trade_history_summary: update.trade_history_summary,
+                lessons_learned: update.lessons_learned || [],
                 episode_count: episodeNumber,
                 last_episode_number: episodeNumber,
                 updated_at: new Date().toISOString(),

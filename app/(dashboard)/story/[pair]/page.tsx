@@ -303,6 +303,19 @@ export default function PairStoryPage() {
                                         </div>
                                     )}
 
+                                    {bible.lessons_learned && bible.lessons_learned.length > 0 && (
+                                        <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4">
+                                            <h3 className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2">Strategic Memory (Lessons Learned)</h3>
+                                            <div className="space-y-2">
+                                                {bible.lessons_learned.map((lesson: string, idx: number) => (
+                                                    <p key={idx} className="text-xs text-neutral-400 italic">
+                                                        • {lesson}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-800">
                                         {bible.dominant_themes?.map((t: string) => (
                                             <span key={t} className="text-[10px] text-neutral-500 bg-neutral-800/50 px-2 py-1 rounded-md">

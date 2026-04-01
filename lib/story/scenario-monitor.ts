@@ -248,6 +248,7 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
         pair: string
         triggeredScenarioId: string
         triggeredEpisodeId: string
+        isInvalidation: boolean
     }> = []
 
     // Evaluate each scenario against its timeframe's candle close
@@ -296,6 +297,9 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
         const outcomeNotes = evaluation === 'triggered'
             ? `Bot detected: ${tf} candle close at ${priceUsed.toFixed(5)} confirmed trigger level ${scenario.trigger_level} (${scenario.trigger_direction})${candleTimeStr}`
             : `Bot detected: ${method} ${priceUsed.toFixed(5)} crossed invalidation level ${scenario.invalidation_level} (${scenario.invalidation_direction})`
+
+        // Check if this was a high-confidence prediction failure
+        const isHighConfidenceFailure = evaluation === 'invalidated'
 
         try {
             await updateScenarioStatus(
@@ -352,10 +356,24 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
                         pair: scenario.pair,
                         triggeredScenarioId: scenario.id,
                         triggeredEpisodeId: scenario.episode_id,
+                        isInvalidation: false
                     })
                 }
             } else {
                 result.invalidated++
+                // Queue generation for INVALIDATED scenarios too (Narrative Reset)
+                const alreadyQueued = generationQueue.some(
+                    g => g.userId === scenario.user_id && g.pair === scenario.pair
+                )
+                if (!alreadyQueued) {
+                    generationQueue.push({
+                        userId: scenario.user_id,
+                        pair: scenario.pair,
+                        triggeredScenarioId: scenario.id,
+                        triggeredEpisodeId: scenario.episode_id,
+                        isInvalidation: true
+                    })
+                }
             }
 
             console.log(`[ScenarioMonitor] ${scenario.pair} "${scenario.title}" → ${evaluation} via ${method} at ${priceUsed.toFixed(5)}`)
@@ -388,6 +406,7 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
                 generationSource: 'bot',
                 triggeredScenarioId: item.triggeredScenarioId,
                 triggeredEpisodeId: item.triggeredEpisodeId,
+                isInvalidation: item.isInvalidation,
             }).catch(err => {
                 console.error(`[ScenarioMonitor] Background story generation failed for ${item.pair}:`, err instanceof Error ? err.message : err)
             })

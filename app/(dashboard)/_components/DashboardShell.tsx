@@ -48,6 +48,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         { label: 'Story', href: '/story', icon: ScrollText },
         { label: 'Trading Gurus', href: '/trading-gurus', icon: GraduationCap },
         { label: 'Market News', href: '/news', icon: Newspaper },
+        { label: 'Indicator Optimization', href: '/indicator-optimization', icon: FlaskConical },
         { label: 'Trade', href: '/trade', icon: Zap },
         { label: 'Journal', href: '/journal', icon: BookOpen },
         { label: 'Positions', href: '/positions', icon: Activity },

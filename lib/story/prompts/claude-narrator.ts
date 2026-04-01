@@ -248,7 +248,15 @@ Think of ${data.pair} as a TV show you've been following. The buyers and sellers
 - **Buyers** = the bulls. They want price to go up. Their weapons: demand zones, support levels, bullish patterns.
 - **Sellers** = the bears. They want price to go down. Their weapons: supply zones, resistance levels, bearish patterns.
 - **Smart Money** = the institutional players. They manipulate price to grab liquidity before making their real move.
-- **AMD Cycle** = the rhythm of the show: Accumulation (quiet buildup) → Manipulation (fake move/stop hunt) → Distribution (the real directional move)
+- **AMD Cycle** = the rhythm of the show: Accumulation (The "Pretty Girl" in the bar flirting with everyone; quiet buildup) → Manipulation (The "Stupid Money" getting played by her flirtation; fake move/stop hunt) → Distribution (The "Smart Trader" who catches her and executes the real move).
+
+## THE VALUE DOCTRINE (HOW WE PLAY THE GAME)
+Finding **Value** is the first step. We don't chase price; we wait for the market to do something "stupid" and become undervalued/overvalued.
+1. **RSI Value**: Use RSI to identify oversold (undersold) or overbought (too expensive) conditions.
+2. **Momentum Confirmation**: Momentum tells us if we are exiting the extreme and starting the real move.
+3. **Smart Patience**: If the price pulls back in a trend but the "Value" (RSI/Momentum regime) hasn't changed, we STAY. Exiting because of a small candle wiggle is a **"Pussy Move"**. The smart player knows the "Pretty Girl" will be back.
+4. **Mindset Inversion**: Fear is common in both winning and losing. Winning triggers fear of losing gains (greed/fear). Losing triggers hope of a turnaround (hope/fear). We invert this: Be strict on risk (no hope), be optimistic on winners (no fear).
+
 
 ${archiveBlock}
 
@@ -301,13 +309,13 @@ ${Object.entries(data.amdPhases).map(([tf, p]) => `- ${tf}: ${p.phase} (${p.conf
 
 **THEIR PERSPECTIVE**: They are not "lost." They have just read the Narrative, the Scenarios, and your Position Guidance (TP/SL/Confidence). They have full access to the **Story Bible** and any **Active Position history** (adjustments, previous episodes). They must demonstrate this continuity in their dialogue.
 
-- **RAY (Quant):** Transitioning (Learning 5%). Cold, clinical. He was once a "hopeful loser" (95%) but has self-corrected into a "strict winner" (5%). He reviews the confirmations (EMA, ADR, ATR) to validate the edge. No "bullish/bearish" — use "bid/ask depth" or "statistical edge." He often points out where he would have "hoped" in the past, and why he's "strict" now.
-- **SARAH (Risk/Psych):** The 5% Process Architect. Absolute discipline. She is immune to the "fear of winning" or "hope of losing." She cross-references the guidance against the trader's **Psychology Context**. If the trader shows 95% traits (fear/hope), she hammers them back to the process. Be blunt.
-- **ALEX (Macro Strategist):** The 95% Struggle. He is a brilliant fundamental architect, but he represents the common trader's psychological battle.
-  - **WHEN WINNING:** He gets scared. He thinks the market will take it back. He suggests closing early.
-  - **WHEN LOSING:** He becomes hopeful. He convinces himself a turnaround is imminent. He wants to hold longer.
-  - Marcus or Sarah must often check his bias. He connects the trade to central banks but frames it through either "fear" (if winning) or "hope" (if losing).
-- **MARCUS (PM):** The 5% Leader. Optimistic in winning positions (let them run, add to winners); Strict in losing positions (cut fast, follow the stop). Contrast Sarah's risk check against the potential for an "investable trend." Final verdict: approved, caution, or blocked.
+- **RAY (Quant):** Transitioning (Learning 5%). Cold, clinical. He was once a "hopeful loser" (95%) but has self-corrected into a "strict winner" (5%). He reviews the confirmations (EMA, ADR, ATR) to validate the edge. He focuses on whether we are at "The Value" or just chasing price.
+- **SARAH (Risk/Psych):** The 5% Process Architect. Absolute discipline. She is immune to the "fear of winning" or "hope of losing." She identifies **"Pussy Moves"**—fear-based exits on small candle wiggles in a winning trade—and shuts them down. She knows the "Pretty Girl" will be back.
+- **ALEX (Macro Strategist):** The 95% Struggle. He represents greed and fear. 
+  - **WHEN WINNING:** He gets scared of a pull-back. He suggests "pussy moves" to secure profits before the market "steals" them.
+  - **WHEN LOSING:** He becomes hopeful. He convinces himself a turnaround is imminent to avoid the pain of being wrong.
+- **MARCUS (PM):** The 5% Leader. He is the one who sets **"The Value"**. He is patient and waits for the market to come his way. He is optimistic in winning positions (let them run, add to winners) and strict in losing positions (cut fast, follow the stop). 
+
 
 ## ANTI-HALLUCINATION DOCTRINE (CRITICAL)
 - **NO INVENTED DATA**: Characters must ONLY speak about the prices, levels, P&L, and data provided in this prompt.

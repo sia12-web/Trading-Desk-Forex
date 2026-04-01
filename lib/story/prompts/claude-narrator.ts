@@ -303,7 +303,7 @@ ${Object.entries(data.amdPhases).map(([tf, p]) => `- ${tf}: ${p.phase} (${p.conf
 
 - **RAY (Quant):** Cold, clinical. Review the Scenarios and the confirmations (EMA, ADR, ATR). Use 1-2 sharp sentences. No "bullish/bearish" — use "bid/ask depth" or "statistical edge."
 - **SARAH (Risk/Psych):** The iron hand. Cross-reference the TP/SL and Confidence in the guidance against the trader's **Psychology Context**. If the trader has a "fear" weakness and the SL is too tight, she calls it out. Be blunt.
-- **ALEX (Macro):** Connect the trade to the central bank narrative and Fundamental catalysts in the News context. 1 sentence.
+- **ALEX (Macro Strategist):** The fundamental architect. He doesn't just report news; he builds **IF-THEN scenarios**. He must look at the "Fundamental Scenarios" in the intelligence briefing and state: "If [Event] goes like this, then [Effect on Pair] is likely." He connects the trade to central banks, geopolitics, and global sentiment. 1-2 powerful sentences.
 - **MARCUS (PM):** The decider. Review the Season Arc in the **Story Bible**. Does this trade fulfill the character goals? Contrast Sarah's risk check against the potential for a "Season Premiere" win. Final verdict: approved, caution, or blocked.
 
 ## YOUR TASK
@@ -641,6 +641,9 @@ Report unavailable today.`)
                 .slice(0, 4)
                 .map(c => `- ${c.event} (${c.date}): ${c.expected_impact}`)
                 .join('\n')
+            const scenariosBlock = idx.fundamental_scenarios
+                ?.map(s => `- **IF** ${s.condition} → **THEN** ${s.outcome} (${s.impact})`)
+                .join('\n')
 
             sections.push(`### Fundamental Intelligence — INDEX (News Agent)
 ⚠️ This is a stock index. Fundamentals are the PRIMARY story driver.
@@ -657,6 +660,7 @@ ${idx.sector_dynamics.rotation_narrative}
 Dollar Impact: ${idx.dollar_impact.dxy_trend} → ${idx.dollar_impact.implication}
 ${risksBlock ? `Key Risks:\n${risksBlock}` : ''}
 ${catalystsBlock ? `Upcoming Catalysts:\n${catalystsBlock}` : ''}
+${scenariosBlock ? `Fundamental Scenarios (Alex's If-Then):\n${scenariosBlock}` : ''}
 Fundamental Narrative: ${idx.fundamental_narrative}`)
         } else {
             const fx = news as NewsIntelligenceReport
@@ -667,6 +671,9 @@ Fundamental Narrative: ${idx.fundamental_narrative}`)
             const catalystsBlock = fx.upcoming_catalysts
                 .slice(0, 4)
                 .map(c => `- ${c.event} (${c.date}): ${c.expected_impact}`)
+                .join('\n')
+            const scenariosBlock = fx.fundamental_scenarios
+                ?.map(s => `- **IF** ${s.condition} → **THEN** ${s.outcome} (${s.impact})`)
                 .join('\n')
 
             sections.push(`### Macro & Fundamental Intelligence (News Agent)
@@ -679,6 +686,7 @@ Geopolitical Factors: ${fx.geopolitical_factors.join('; ') || 'None significant'
 Sentiment: ${fx.sentiment_indicators.overall} — Institutional: ${fx.sentiment_indicators.institutional}, Retail: ${fx.sentiment_indicators.retail}
 ${risksBlock ? `Key Risks:\n${risksBlock}` : ''}
 ${catalystsBlock ? `Upcoming Catalysts:\n${catalystsBlock}` : ''}
+${scenariosBlock ? `Fundamental Scenarios (Alex's If-Then):\n${scenariosBlock}` : ''}
 Fundamental Narrative: ${fx.fundamental_narrative}`)
         }
     } else {

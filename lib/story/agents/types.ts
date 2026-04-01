@@ -46,6 +46,11 @@ export interface NewsIntelligenceReport {
         date: string
         expected_impact: string
     }>
+    fundamental_scenarios: Array<{
+        condition: string
+        outcome: string
+        impact: string
+    }>
     fundamental_narrative: string
     summary: string
 }
@@ -116,6 +121,11 @@ export interface IndexNewsIntelligenceReport {
         event: string
         date: string
         expected_impact: string
+    }>
+    fundamental_scenarios: Array<{
+        condition: string
+        outcome: string
+        impact: string
     }>
     fundamental_narrative: string
     summary: string

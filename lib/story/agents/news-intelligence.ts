@@ -112,7 +112,8 @@ Produce a comprehensive macro-fundamental intelligence report. Analyze:
 4. **Sentiment**: What institutional money is doing (COT positioning if inferrable), retail positioning contrarian signals.
 5. **Key Risks**: What could cause a sudden move? Probability and direction.
 6. **Upcoming Catalysts**: Specific events from the calendar that could move ${pair}.
-7. **Fundamental Narrative**: A 3-5 sentence narrative about the fundamental story behind ${pair}.
+7. **Fundamental Scenarios (IF-THEN)**: Create 2-3 logical scenarios based on upcoming news (e.g., "If [speaker/event] says [outcome], then [impact on pair]"). This is CRITICAL for the Story narrator Alex.
+8. **Fundamental Narrative**: A 3-5 sentence narrative about the fundamental story behind ${pair}.
 
 Respond with JSON (no markdown fences):
 {
@@ -140,6 +141,9 @@ Respond with JSON (no markdown fences):
   ],
   "upcoming_catalysts": [
     {"event": "Event name", "date": "YYYY-MM-DD", "expected_impact": "How it could affect ${pair}"}
+  ],
+  "fundamental_scenarios": [
+    {"condition": "If Trump mentions X", "outcome": "Market sees Y", "impact": "Hawkish for USD, bearish for ${pair}"}
   ],
   "fundamental_narrative": "3-5 sentence fundamental story for ${pair}",
   "summary": "2-3 sentence executive summary for the narrator"

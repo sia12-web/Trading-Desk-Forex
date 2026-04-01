@@ -111,6 +111,7 @@ This is a STOCK INDEX, not a currency pair. Your analysis must be equity-focused
 5. **Sector Dynamics**: Which sectors are leading/lagging the ${meta.displayName}? Any notable rotation?
 6. **Dollar Impact**: DXY trend and its implication for this index (strong dollar = headwind for US multinationals).
 7. **Key Risks & Catalysts**: What could cause a 2%+ move this week?
+8. **Fundamental Scenarios (IF-THEN)**: Create 2-3 logical scenarios based on upcoming news (e.g., "If [speaker/event] says [outcome], then [impact on ${meta.displayName}]"). This is CRITICAL for the Story narrator Alex.
 
 Respond with JSON (no markdown fences):
 {
@@ -152,6 +153,9 @@ Respond with JSON (no markdown fences):
   ],
   "upcoming_catalysts": [
     {"event": "Event name", "date": "YYYY-MM-DD", "expected_impact": "How it affects ${meta.displayName}"}
+  ],
+  "fundamental_scenarios": [
+    {"condition": "If Fed mentions rate cut", "outcome": "Yields drop", "impact": "Bullish for ${meta.displayName}"}
   ],
   "fundamental_narrative": "3-5 sentence fundamental story for ${meta.displayName}. What is the MAIN theme driving this index right now?",
   "summary": "2-3 sentence executive summary for the story narrator"

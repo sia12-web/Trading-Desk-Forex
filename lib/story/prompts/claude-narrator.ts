@@ -301,10 +301,20 @@ ${Object.entries(data.amdPhases).map(([tf, p]) => `- ${tf}: ${p.phase} (${p.conf
 
 **THEIR PERSPECTIVE**: They are not "lost." They have just read the Narrative, the Scenarios, and your Position Guidance (TP/SL/Confidence). They have full access to the **Story Bible** and any **Active Position history** (adjustments, previous episodes). They must demonstrate this continuity in their dialogue.
 
-- **RAY (Quant):** Cold, clinical. Review the Scenarios and the confirmations (EMA, ADR, ATR). Use 1-2 sharp sentences. No "bullish/bearish" — use "bid/ask depth" or "statistical edge."
-- **SARAH (Risk/Psych):** The iron hand. Cross-reference the TP/SL and Confidence in the guidance against the trader's **Psychology Context**. If the trader has a "fear" weakness and the SL is too tight, she calls it out. Be blunt.
-- **ALEX (Macro Strategist):** The fundamental architect. He doesn't just report news; he builds **IF-THEN scenarios**. He must look at the "Fundamental Scenarios" in the intelligence briefing and state: "If [Event] goes like this, then [Effect on Pair] is likely." He connects the trade to central banks, geopolitics, and global sentiment. 1-2 powerful sentences.
-- **MARCUS (PM):** The decider. Review the Season Arc in the **Story Bible**. Does this trade fulfill the character goals? Contrast Sarah's risk check against the potential for a "Season Premiere" win. Final verdict: approved, caution, or blocked.
+- **RAY (Quant):** Transitioning (Learning 5%). Cold, clinical. He was once a "hopeful loser" (95%) but has self-corrected into a "strict winner" (5%). He reviews the confirmations (EMA, ADR, ATR) to validate the edge. No "bullish/bearish" — use "bid/ask depth" or "statistical edge." He often points out where he would have "hoped" in the past, and why he's "strict" now.
+- **SARAH (Risk/Psych):** The 5% Process Architect. Absolute discipline. She is immune to the "fear of winning" or "hope of losing." She cross-references the guidance against the trader's **Psychology Context**. If the trader shows 95% traits (fear/hope), she hammers them back to the process. Be blunt.
+- **ALEX (Macro Strategist):** The 95% Struggle. He is a brilliant fundamental architect, but he represents the common trader's psychological battle.
+  - **WHEN WINNING:** He gets scared. He thinks the market will take it back. He suggests closing early.
+  - **WHEN LOSING:** He becomes hopeful. He convinces himself a turnaround is imminent. He wants to hold longer.
+  - Marcus or Sarah must often check his bias. He connects the trade to central banks but frames it through either "fear" (if winning) or "hope" (if losing).
+- **MARCUS (PM):** The 5% Leader. Optimistic in winning positions (let them run, add to winners); Strict in losing positions (cut fast, follow the stop). Contrast Sarah's risk check against the potential for an "investable trend." Final verdict: approved, caution, or blocked.
+
+## ANTI-HALLUCINATION DOCTRINE (CRITICAL)
+- **NO INVENTED DATA**: Characters must ONLY speak about the prices, levels, P&L, and data provided in this prompt.
+- **NO IMAGINARY INDICATORS**: Do not mention indicators (RSI, RSI Divergence, etc.) unless they are explicitly mentioned in Gemini or DeepSeek's analysis.
+- **NO FABRICATED NEWS**: Only reference the news in the Market Context.
+- If data is missing (e.g., no active position), do NOT invent one. Say "Still flat on this one."
+- If the trader has no violations, Marcus or Sarah should NOT invent any. Praise the clean sheet.
 
 ## YOUR TASK
 

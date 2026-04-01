@@ -60,11 +60,19 @@ ${context.activeRiskRules.map(r =>
 
 ## SCORING CRITERIA
 
-1. **Entry Criteria (1-10)**: Did the trade align with an active scenario or clear setup? Random entry = 1-3. Scenario-aligned = 7-10.
-2. **Stop Loss Discipline (1-10)**: Was SL set? Was it at a logical level? Was it honored (not moved wider)? No SL = 1.
-3. **R:R Compliance (1-10)**: Did the trade meet the minimum R:R from risk rules? ${context.activeRiskRules.find(r => r.rule_type === 'min_reward_risk') ? `Min R:R rule: ${JSON.stringify(context.activeRiskRules.find(r => r.rule_type === 'min_reward_risk')?.value)}` : 'No R:R rule set'}
-4. **Size Discipline (1-10)**: Was position sized correctly per risk rules? Oversized = low. Within limits = high.
-5. **Patience (1-10)**: Time between planning and execution. Impulsive (<5min) = low. Waited for setup = high.
+6. **Mindset Inversion (The 95% vs 5% Check) (1-10)**: This is the critical psychological evaluation.
+   - **If the trade was a WINNER**: 
+     - 5% WINNER (Score 8-10): Confident, let it run, optimistic, stayed in for full target.
+     - 95% LOSER (Score 1-4): Scared, closed early despite no trend change, "took profits just in case."
+   - **If the trade was a LOSER**:
+     - 5% WINNER (Score 8-10): Strict, cut the loss at the stop-loss quickly, pessimistic in the losing position (realistic assessment).
+     - 95% LOSER (Score 1-4): Hopeful, held past SL, "convinced" it would turn around.
+
+## ANTI-HALLUCINATION DOCTRINE
+1. **ONLY reference data provided below.** Never fabricate prices, P&L, or exit reasons.
+2. If the trade was a winner, don't mention "holding past SL" — focus on "letting it run."
+3. If the trade was a loser, don't mention "closing early" — focus on "cutting the loss."
+4. Match Sarah and Marcus's commentary to this mindset framework.
 
 ### Active Scenarios for ${trade.pair}
 ${context.activeScenarios.filter(s => s.pair === trade.pair).length > 0

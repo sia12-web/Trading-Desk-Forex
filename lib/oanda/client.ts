@@ -65,8 +65,8 @@ async function oandaFetch<T>(
                     continue
                 }
 
-                console.error(`OANDA API Error [${response.status}]:`, errorData)
-                return { error: { status: response.status, ...errorData } }
+                console.error(`[OANDA_DEBUG] OANDA API Error [${response.status}] on ${endpoint}:`, errorData)
+                return { error: { status: response.status, endpoint, ...errorData } }
             }
 
             const data = await response.json()
@@ -150,9 +150,14 @@ export async function getTradeHistoryForSync(count: number = 500, beforeId?: str
     return { data: result.data?.trades || [], error: result.error }
 }
 
-export async function getCurrentPrices(instruments: string[]) {
+export async function getCurrentPrices(instruments: string[]): Promise<{ data?: OandaPrice[], error?: any }> {
+    if (!instruments.length) return { data: [] }
+
     const cfg = await getOandaConfig()
-    const instrumentsParam = instruments.join(',')
+    // Robust formatting: filter truthy, trim, replace slash, and remove duplicates
+    const formatted = [...new Set(instruments.filter(Boolean).map(i => i.trim().replace('/', '_')))]
+    if (formatted.length === 0) return { data: [] }
+    const instrumentsParam = formatted.join(',')
     const result = await oandaFetch<{ prices: OandaPrice[] }>(`/v3/accounts/${cfg.accountId}/pricing?instruments=${instrumentsParam}`, {}, 1, cfg)
     
     // Filter and sanitize price data to prevent downstream crashes on missing asks/bids
@@ -269,7 +274,14 @@ export async function getCandles(params: {
     price?: string
 }): Promise<{ data?: OandaCandle[], error?: any }> {
     const cfg = await getOandaConfig()
-    const { instrument, granularity, count, price = 'M' } = params
+    const { instrument: rawInstrument, granularity, count, price = 'M' } = params
+    
+    // Robust formatting: ensure truthiness, trim and ensure underscore
+    if (!rawInstrument) {
+        return { error: 'No instrument provided' }
+    }
+    const instrument = rawInstrument.trim().replace('/', '_')
+
     const result = await oandaFetch<{ candles: OandaCandle[] }>(
         `/v3/instruments/${instrument}/candles?granularity=${granularity}&count=${count}&price=${price}`,
         {},

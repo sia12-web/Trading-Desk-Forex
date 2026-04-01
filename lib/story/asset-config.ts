@@ -88,12 +88,27 @@ export function getAssetConfig(pair: string): AssetConfig {
         }
     }
 
-    // JPY pairs and Gold (XAU) often use 3 decimal places
-    if (pair.includes('JPY') || pair.includes('XAU')) {
-        return { ...FOREX_DEFAULT, decimalPlaces: 3 }
+    // JPY pairs use 3 decimal places and 100x multiplier for pips
+    if (pair.includes('JPY')) {
+        return { 
+            ...FOREX_DEFAULT, 
+            decimalPlaces: 3,
+            pointMultiplier: 100 
+        }
+    }
+
+    // Gold (XAU) uses 3 decimal places and 10x multiplier (0.1 = 1 pip/point)
+    if (pair.includes('XAU')) {
+        return { 
+            ...FOREX_DEFAULT, 
+            decimalPlaces: 3, 
+            pointMultiplier: 10,
+            pointLabel: 'points'
+        }
     }
 
     return FOREX_DEFAULT
+
 }
 
 /**

@@ -6,6 +6,8 @@ export const VALID_PAIRS = [
     'GBP/AUD', 'EUR/AUD', 'AUD/JPY', 'NZD/JPY', 'USD/TRY',
     // CFD Indexes
     'NAS100/USD', 'SPX500/USD', 'DE30/EUR', 'US30/USD',
+    // Commodities
+    'XAU/USD',
 ] as const
 
 export type ValidPair = (typeof VALID_PAIRS)[number]

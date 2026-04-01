@@ -21,8 +21,9 @@ import { getAssetConfig } from './asset-config'
 function getPipLocation(pair: string): number {
     const config = getAssetConfig(pair)
     if (config.type === 'cfd_index') return -1 // Indices: 1 decimal (15250.5)
-    const jpyPairs = ['USD/JPY', 'EUR/JPY', 'GBP/JPY', 'AUD/JPY', 'NZD/JPY', 'CAD/JPY', 'CHF/JPY']
-    return jpyPairs.includes(pair) ? -2 : -4
+    if (pair.includes('JPY')) return -2 // JPY: 0.01 is 1 pip
+    if (pair.includes('XAU')) return -1 // Gold: 0.1 is 1 point
+    return -4 // Standard forex: 0.0001 is 1 pip
 }
 
 import type { SupabaseClient } from '@supabase/supabase-js'

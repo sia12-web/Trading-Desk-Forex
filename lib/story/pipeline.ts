@@ -258,7 +258,7 @@ export async function generateStory(
         }
 
         // ── Step 4: Gemini structural analysis ──
-        console.log(`${TAG} [Gemini] Starting structural analysis (gemini-1.5-flash, 90s, 8K tokens)...`)
+        console.log(`${TAG} [Gemini] Starting structural analysis (gemini-2.5-flash, 90s, 8K tokens)...`)
         const geminiStart = Date.now()
         await updateProgress(taskId, 35, 'Gemini analyzing market structure...', client)
         const geminiPrompt = buildStoryStructuralPrompt(data, news)

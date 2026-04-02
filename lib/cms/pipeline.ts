@@ -57,7 +57,7 @@ export async function generateCMSAnalysis(
         }
 
         // ── Phase 1: Gemini ranks and groups pre-computed conditions ──
-        console.log(`${TAG} [Gemini] Ranking ${conditions.length} conditions (gemini-1.5-flash, 120s, 8K tokens)...`)
+        console.log(`${TAG} [Gemini] Ranking ${conditions.length} conditions (gemini-2.5-flash, 120s, 8K tokens)...`)
         const geminiStart = Date.now()
         await updateProgress(taskId, 35, 'Gemini ranking patterns...', client)
         const geminiPrompt = buildGeminiPatternPrompt(data, conditions)

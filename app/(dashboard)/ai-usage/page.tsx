@@ -44,7 +44,7 @@ const PROVIDER_CONFIG: Record<string, { label: string; company: string; model: s
     google: {
         label: 'Gemini',
         company: 'Google',
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         role: 'Pattern Archaeologist',
         color: 'emerald',
         icon: Sparkles,

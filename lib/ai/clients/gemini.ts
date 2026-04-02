@@ -7,7 +7,7 @@ function getClient() {
     if (!_client) {
         _client = new GoogleGenAI({ 
             apiKey: process.env.GEMINI_API_KEY!,
-            apiVersion: 'v1'  // Explicitly use stable v1 API to avoid v1beta model availability issues
+            apiVersion: 'v1beta' // Using v1beta for access to Gemini 2.5+ models in 2026
         })
     }
     return _client
@@ -22,7 +22,7 @@ interface GeminiOptions {
 
 /**
  * Call Gemini API — used as the "Pattern Archaeologist" for structural analysis.
- * Primary model: gemini-1.5-flash (reliable with JSON mode).
+ * Primary model: gemini-2.5-flash (reliable with JSON mode).
  */
 export async function callGemini(
     prompt: string,
@@ -31,7 +31,7 @@ export async function callGemini(
     const {
         timeout = 90_000,
         maxTokens = 8192,
-        model = process.env.GEMINI_MODEL || 'gemini-1.5-flash', // Using env override or stable v1 baseline
+        model = process.env.GEMINI_MODEL || 'gemini-2.5-flash', // Using env override or latest stable v2.5 baseline
         usage,
     } = options
 

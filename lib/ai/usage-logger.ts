@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 const PRICING: Record<string, { input: number; output: number; cacheRead?: number }> = {
     'claude-opus-4-6':         { input: 15.00, output: 75.00, cacheRead: 1.50 },
     'claude-sonnet-4-6':       { input: 3.00,  output: 15.00, cacheRead: 0.30 },
-    'gemini-3-flash-preview':  { input: 0.15,  output: 0.60 },
+    'gemini-1.5-flash':       { input: 0.075, output: 0.30 }, // Pay-as-you-go pricing for v1 standard
     'deepseek-chat':           { input: 0.27,  output: 1.10 },
 }
 

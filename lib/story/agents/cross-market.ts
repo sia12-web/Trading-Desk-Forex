@@ -81,7 +81,7 @@ export async function runCrossMarketAnalysis(
         report.pair = pair
 
         await saveAgentReport(userId, pair, 'cross_market', report as unknown as Record<string, unknown>, {
-            rawOutput, model: 'gemini-3-flash-preview', durationMs: Date.now() - start,
+            rawOutput, model: 'gemini-1.5-flash', durationMs: Date.now() - start,
         }, client)
 
         return report
@@ -89,7 +89,7 @@ export async function runCrossMarketAnalysis(
         const message = error instanceof Error ? error.message : 'Unknown error'
         console.error(`Cross-market analysis failed for ${pair}:`, message)
         await saveAgentReport(userId, pair, 'cross_market', {}, {
-            model: 'gemini-3-flash-preview', durationMs: Date.now() - start, error: message,
+            model: 'gemini-1.5-flash', durationMs: Date.now() - start, error: message,
         }, client)
         return null
     }

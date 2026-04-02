@@ -57,7 +57,7 @@ export async function generateScenarioAnalysis(
         console.log(`${TAG} [Agents] ${agentCount}/3 reports available`)
 
         // ── Step 3: Gemini structural scan ──
-        console.log(`${TAG} [Gemini] Starting structural scan (gemini-3-flash-preview, 90s timeout, 8K tokens)...`)
+        console.log(`${TAG} [Gemini] Starting structural scan (gemini-1.5-flash, 90s timeout, 8K tokens)...`)
         const geminiStart = Date.now()
         await updateProgress(taskId, 30, 'Gemini scanning market structure...', client)
         const geminiPrompt = buildScenarioScannerPrompt(data, news)

@@ -51,21 +51,22 @@ export async function GET() {
     }
 
     // Test Gemini (Pattern Archaeologist)
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash'
     const geminiStart = Date.now()
     try {
-        await callGemini(TEST_PROMPT, { timeout: 10_000, maxTokens: 100, model: 'gemini-3-flash-preview' })
+        await callGemini(TEST_PROMPT, { timeout: 10_000, maxTokens: 100, model: geminiModel })
         results.push({
             name: 'Gemini',
-            model: 'gemini-3-flash-preview',
+            model: geminiModel,
             role: 'Pattern Archaeologist',
             connected: true,
             responseTime: Date.now() - geminiStart,
-            version: '3 Flash',
+            version: '1.5 Flash',
         })
     } catch (error) {
         results.push({
             name: 'Gemini',
-            model: 'gemini-3-flash-preview',
+            model: geminiModel,
             role: 'Pattern Archaeologist',
             connected: false,
             error: error instanceof Error ? error.message : 'Connection failed',
@@ -106,7 +107,7 @@ export async function GET() {
             },
             gemini: {
                 configured: !!process.env.GEMINI_API_KEY,
-                model: 'gemini-3-flash-preview',
+                model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
             },
             deepseek: {
                 configured: !!process.env.DEEPSEEK_API_KEY,

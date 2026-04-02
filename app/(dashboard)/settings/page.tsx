@@ -491,7 +491,7 @@ export default function SettingsPage() {
                                         <span className="text-[10px] font-bold uppercase tracking-widest">Model</span>
                                     </div>
                                     <div className="p-3 bg-neutral-800 rounded-xl border border-neutral-700 font-mono text-sm text-[11px]">
-                                        {aiConnection?.config.gemini.model || 'gemini-3-flash-preview'}
+                                        {aiConnection?.config.gemini.model || 'gemini-1.5-flash'}
                                     </div>
                                 </div>
                                 <div className="space-y-2">
@@ -500,7 +500,7 @@ export default function SettingsPage() {
                                         <span className="text-[10px] font-bold uppercase tracking-widest">Version</span>
                                     </div>
                                     <div className="p-3 bg-neutral-800 rounded-xl border border-neutral-700 font-bold text-sm">
-                                        {aiConnection?.models.find(m => m.name === 'Gemini')?.version || '3 Flash'}
+                                        {aiConnection?.models.find(m => m.name === 'Gemini')?.version || '1.5 Flash'}
                                     </div>
                                 </div>
                                 <div className="space-y-2">

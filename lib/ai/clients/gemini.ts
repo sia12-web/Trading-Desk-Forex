@@ -31,7 +31,7 @@ export async function callGemini(
     const {
         timeout = 90_000,
         maxTokens = 8192,
-        model = 'gemini-1.5-flash', // Using stable model on V1 endpoint
+        model = process.env.GEMINI_MODEL || 'gemini-1.5-flash', // Using env override or stable v1 baseline
         usage,
     } = options
 

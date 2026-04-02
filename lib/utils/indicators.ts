@@ -84,6 +84,22 @@ export function calculateRSI(data: number[], period: number): number[] {
     return rsi
 }
 
+/**
+ * Momentum Indicator - Rate of change over N periods
+ * Returns the difference between current price and price N periods ago
+ */
+export function calculateMomentum(data: number[], period: number): number[] {
+    const momentum: number[] = []
+    for (let i = 0; i < data.length; i++) {
+        if (i < period) {
+            momentum.push(NaN)
+        } else {
+            momentum.push(data[i] - data[i - period])
+        }
+    }
+    return momentum
+}
+
 export function calculateMACD(data: number[], fast: number = 12, slow: number = 26, signal: number = 9) {
     const emaFast = calculateEMA(data, fast)
     const emaSlow = calculateEMA(data, slow)

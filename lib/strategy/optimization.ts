@@ -4,15 +4,18 @@ import { callDeepSeek } from '@/lib/ai/clients/deepseek'
 import { createServiceClient } from '@/lib/supabase/service'
 import { OandaCandle } from '@/lib/types/oanda'
 
-export type Timeframe = 'M' | 'W' | 'D' | 'H4' | 'H1'
+export type Timeframe = 'M' | 'W' | 'D' | 'H4' | 'H3' | 'H1'
 
 export interface IndicatorSettings {
     RSI: { period: number; overbought: number; oversold: number }
     MACD: { fastPeriod: number; slowPeriod: number; signalPeriod: number }
     Stochastic: { kPeriod: number; dPeriod: number; overbought: number; oversold: number }
     'Bollinger Bands': { period: number; stdDev: number }
+    EMA: { period: number }
+    SMA: { period: number }
     'EMA Crossover': { fastPeriod: number; slowPeriod: number }
     'SMA Crossover': { fastPeriod: number; slowPeriod: number }
+    Momentum: { period: number }
     SAR: { afStart: number; afStep: number; afMax: number }
     ADX: { period: number }
     Alligator: { jawPeriod: number; teethPeriod: number; lipsPeriod: number }
@@ -25,7 +28,7 @@ export interface IndicatorSettings {
  */
 export async function runGlobalOptimization(userId: string, onProgress?: (msg: string) => void) {
     const subscriptions = await getSubscribedPairs(userId)
-    const timeframes: Timeframe[] = ['M', 'W', 'D', 'H4', 'H1']
+    const timeframes: Timeframe[] = ['M', 'W', 'D', 'H4', 'H3', 'H1']
     
     onProgress?.(`Found ${subscriptions.length} instruments to calibrate...`)
 
@@ -115,10 +118,15 @@ REQUIRED JSON STRUCTURE:
   "MACD": { "fastPeriod": 12, "slowPeriod": 26, "signalPeriod": 9 },
   "Stochastic": { "kPeriod": 14, "dPeriod": 3, "overbought": 80, "oversold": 20 },
   "Bollinger Bands": { "period": 20, "stdDev": 2 },
+  "EMA": { "period": 21 },
+  "SMA": { "period": 50 },
   "EMA Crossover": { "fastPeriod": 12, "slowPeriod": 26 },
   "SMA Crossover": { "fastPeriod": 20, "slowPeriod": 50 },
+  "Momentum": { "period": 10 },
   "SAR": { "afStart": 0.02, "afStep": 0.02, "afMax": 0.20 },
-  "ADX": { "period": 14 }
+  "ADX": { "period": 14 },
+  "Alligator": { "jawPeriod": 13, "teethPeriod": 8, "lipsPeriod": 5 },
+  "Awesome Oscillator": { "fastPeriod": 5, "slowPeriod": 34 }
 }
 
 Provide ONLY the JSON object. Do not explain your reasoning.

@@ -30,3 +30,31 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ calibrations: data || [] })
 }
+
+export async function DELETE(req: NextRequest) {
+    const user = await getAuthUser()
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const pair = searchParams.get('pair')
+
+    if (!pair) {
+        return NextResponse.json({ error: 'Pair parameter is required' }, { status: 400 })
+    }
+
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('indicator_calibrations')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('pair', pair)
+
+    if (error) {
+        console.error('Failed to delete calibrations:', error)
+        return NextResponse.json({ error: 'Failed to delete' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, message: `Deleted all calibrations for ${pair}` })
+}

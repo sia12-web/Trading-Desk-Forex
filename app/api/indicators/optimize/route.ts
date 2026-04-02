@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
         if (pair) {
             console.log(`[Optimization] Running calibration for single pair: ${pair}`)
-            const timeframes: Timeframe[] = ['M', 'W', 'D', 'H4', 'H1']
+            const timeframes: Timeframe[] = ['M', 'W', 'D', 'H4', 'H3', 'H1']
             for (const tf of timeframes) {
                 await calibrateForPairAndTimeframe(user.id, pair, tf as any)
             }

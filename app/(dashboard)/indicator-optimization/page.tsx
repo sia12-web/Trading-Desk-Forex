@@ -1,18 +1,19 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { 
-    FlaskConical, 
-    RefreshCw, 
-    CheckCircle2, 
-    AlertCircle, 
-    Clock, 
-    ChevronRight, 
+import {
+    FlaskConical,
+    RefreshCw,
+    CheckCircle2,
+    AlertCircle,
+    Clock,
+    ChevronRight,
     Cpu,
     LineChart,
     BarChart3,
     Activity,
-    Settings2
+    Settings2,
+    Trash2
 } from 'lucide-react'
 import { Card } from '@/components/ui/card' // Assuming basic UI components exist or using standard div
 import { ALLOWED_INSTRUMENTS, oandaToDisplayPair } from '@/lib/constants/instruments'
@@ -172,7 +173,12 @@ export default function IndicatorOptimizationPage() {
                 ) : (
                     <div className="space-y-12">
                         {pairs.map(pair => (
-                            <InstrumentCalibrationRow key={pair} pair={pair} calibrations={calibrations.filter(c => c.pair === pair)} />
+                            <InstrumentCalibrationRow
+                                key={pair}
+                                pair={pair}
+                                calibrations={calibrations.filter(c => c.pair === pair)}
+                                onDelete={fetchData}
+                            />
                         ))}
                     </div>
                 )}
@@ -181,17 +187,48 @@ export default function IndicatorOptimizationPage() {
     )
 }
 
-function InstrumentCalibrationRow({ pair, calibrations }: { pair: string, calibrations: Calibration[] }) {
-    const tfs = ['M', 'W', 'D', 'H4', 'H1']
-    
+function InstrumentCalibrationRow({ pair, calibrations, onDelete }: { pair: string, calibrations: Calibration[], onDelete: () => void }) {
+    const [deleting, setDeleting] = React.useState(false)
+    const tfs = ['M', 'W', 'D', 'H4', 'H3', 'H1']
+
+    const handleDelete = async () => {
+        if (!confirm(`Are you sure you want to delete all calibrations for ${pair}?`)) {
+            return
+        }
+
+        setDeleting(true)
+        try {
+            const res = await fetch(`/api/indicators/calibrations?pair=${encodeURIComponent(pair)}`, {
+                method: 'DELETE'
+            })
+            if (!res.ok) throw new Error('Failed to delete')
+            onDelete()
+        } catch (err) {
+            console.error('Delete failed:', err)
+            alert('Failed to delete calibrations')
+        } finally {
+            setDeleting(false)
+        }
+    }
+
     return (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3 px-2">
-                <div className="w-1.5 h-6 rounded-full bg-blue-500" />
-                <h2 className="text-lg font-bold text-neutral-200 tracking-wide uppercase">{pair.replace('_', ' / ')}</h2>
+            <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-6 rounded-full bg-blue-500" />
+                    <h2 className="text-lg font-bold text-neutral-200 tracking-wide uppercase">{pair.replace('_', ' / ')}</h2>
+                </div>
+                <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Delete all calibrations for this pair"
+                >
+                    <Trash2 size={16} className={deleting ? 'animate-pulse' : ''} />
+                </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                 {tfs.map(tf => {
                     const cal = calibrations.find(c => c.timeframe === tf)
                     return (
@@ -233,26 +270,47 @@ function TimeframeCalibrationCard({ timeframe, calibration }: { timeframe: strin
             </div>
 
             <div className="space-y-3.5 pt-1">
-                <CalibrationItem 
-                    label="RSI" 
-                    value={`${settings.RSI.period} / ${settings.RSI.overbought}-${settings.RSI.oversold}`} 
+                <CalibrationItem
+                    label="RSI"
+                    value={`${settings.RSI.period} / ${settings.RSI.overbought}-${settings.RSI.oversold}`}
                     icon={Activity}
                 />
-                <CalibrationItem 
-                    label="MACD" 
-                    value={`${settings.MACD.fastPeriod}-${settings.MACD.slowPeriod}-${settings.MACD.signalPeriod}`} 
+                <CalibrationItem
+                    label="MACD"
+                    value={`${settings.MACD.fastPeriod}-${settings.MACD.slowPeriod}-${settings.MACD.signalPeriod}`}
                     icon={BarChart3}
                 />
-                <CalibrationItem 
-                    label="Stochastic" 
-                    value={`${settings.Stochastic.kPeriod}-${settings.Stochastic.dPeriod}`} 
+                <CalibrationItem
+                    label="Stochastic"
+                    value={`${settings.Stochastic.kPeriod}-${settings.Stochastic.dPeriod}`}
                     icon={LineChart}
                 />
-                <CalibrationItem 
-                    label="B-Bands" 
-                    value={`${settings['Bollinger Bands'].period} (x${settings['Bollinger Bands'].stdDev})`} 
+                <CalibrationItem
+                    label="B-Bands"
+                    value={`${settings['Bollinger Bands'].period} (x${settings['Bollinger Bands'].stdDev})`}
                     icon={Activity}
                 />
+                {settings.EMA && (
+                    <CalibrationItem
+                        label="EMA"
+                        value={`${settings.EMA.period}`}
+                        icon={LineChart}
+                    />
+                )}
+                {settings.SMA && (
+                    <CalibrationItem
+                        label="SMA"
+                        value={`${settings.SMA.period}`}
+                        icon={LineChart}
+                    />
+                )}
+                {settings.Momentum && (
+                    <CalibrationItem
+                        label="Momentum"
+                        value={`${settings.Momentum.period}`}
+                        icon={Activity}
+                    />
+                )}
             </div>
 
             <div className="mt-4 pt-3 border-t border-neutral-800/50 flex items-center justify-between group-hover:px-1 transition-all">

@@ -53,7 +53,6 @@ export async function callGemini(
                 contents: prompt,
                 config: {
                     maxOutputTokens: maxTokens,
-                    responseMimeType: 'application/json',
                 },
             })
 

@@ -18,6 +18,12 @@ export async function POST(
         if (!position || position.user_id !== user.id) {
             return NextResponse.json({ error: 'Not found' }, { status: 404 })
         }
+
+        // Idempotent: if already active, just return it (trade execution auto-linked it)
+        if (position.status === 'active') {
+            return NextResponse.json({ position, message: 'Position already active' })
+        }
+
         if (position.status !== 'suggested') {
             return NextResponse.json({ error: 'Position is not in suggested state' }, { status: 400 })
         }

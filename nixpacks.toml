@@ -1,8 +1,14 @@
-[build]
-command = "npm run build"
+[phases.setup]
+nixPkgs = ["nodejs_20"]
 
-[deploy]
-startCommand = "npm start"
-# Next.js standalone doesn't need much RAM, but build does
-# Nixpacks will automatically cache the .next folder
-cacheDirectories = ["node_modules", ".next/cache"]
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "node .next/standalone/server.js"
+
+[variables]
+HOSTNAME = "0.0.0.0"

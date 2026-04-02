@@ -66,6 +66,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const [deskReview, setDeskReview] = useState<DeskMeeting | null>(null)
     const [isReviewing, setIsReviewing] = useState(false)
     const [storyPositionId, setStoryPositionId] = useState<string | null>(null)
+    const [conversionRate, setConversionRate] = useState<number>(1)
 
     // Load persisted state or params on mount
     useEffect(() => {
@@ -158,29 +159,67 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const instrumentDetails = instruments.find(i => i.name === selectedInstrument)
     const pipLocation = instrumentDetails?.pipLocation || -4
 
-    // Fetch current price
-    useEffect(() => {
-        const fetchPrice = async () => {
-            try {
-                const res = await fetch(`/api/oanda/prices?instruments=${selectedInstrument}`)
-                const data = await res.json()
-                const price = data.prices?.find((p: any) => p.instrument === selectedInstrument)
-                if (price) {
-                    setCurrentPrice(price)
-                    const marketPrice = direction === 'long' ? parseFloat(price.asks[0].price) : parseFloat(price.bids[0].price)
-                    if (entryPrice === 0 || orderType === 'MARKET') {
-                        setEntryPrice(marketPrice)
-                    }
-                    if (limitPrice === 0) setLimitPrice(marketPrice)
-                }
-            } catch (err) {
-                console.error(err)
+    const fetchPrice = async () => {
+        try {
+            const quoteCurrency = selectedInstrument.split('_')[1]
+            const accountCurrency = accountInfo?.account?.currency || 'USD'
+            
+            // Determine instruments to fetch
+            const instrumentsToFetch = [selectedInstrument]
+            let conversionPair: string | null = null
+            let inverseConversionPair: string | null = null
+
+            if (quoteCurrency !== accountCurrency) {
+                conversionPair = `${quoteCurrency}_${accountCurrency}`
+                inverseConversionPair = `${accountCurrency}_${quoteCurrency}`
+                instrumentsToFetch.push(conversionPair, inverseConversionPair)
             }
+
+            const res = await fetch(`/api/oanda/prices?instruments=${instrumentsToFetch.join(',')}`)
+            const data = await res.json()
+            
+            const prices = data.prices || []
+            const price = prices.find((p: any) => p.instrument === selectedInstrument)
+            
+            if (price) {
+                setCurrentPrice(price)
+                const marketPrice = direction === 'long' ? parseFloat(price.asks[0].price) : parseFloat(price.bids[0].price)
+                if (entryPrice === 0 || orderType === 'MARKET') {
+                    setEntryPrice(marketPrice)
+                }
+                if (limitPrice === 0) setLimitPrice(marketPrice)
+            }
+
+            // Calculate conversion rate
+            if (quoteCurrency === accountCurrency) {
+                setConversionRate(1)
+            } else {
+                const convPrice = prices.find((p: any) => p.instrument === conversionPair)
+                if (convPrice) {
+                    const mid = (parseFloat(convPrice.asks[0].price) + parseFloat(convPrice.bids[0].price)) / 2
+                    setConversionRate(mid)
+                } else {
+                    const invConvPrice = prices.find((p: any) => p.instrument === inverseConversionPair)
+                    if (invConvPrice) {
+                        const mid = (parseFloat(invConvPrice.asks[0].price) + parseFloat(invConvPrice.bids[0].price)) / 2
+                        setConversionRate(1 / mid)
+                    } else {
+                        // Fallback or retry logic if conversion pair not found in one call
+                        setConversionRate(1) 
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(err)
         }
+    }
+
+    // Fetch current price and conversion rate
+    useEffect(() => {
         fetchPrice()
         const interval = setInterval(fetchPrice, 5000)
         return () => clearInterval(interval)
-    }, [selectedInstrument, direction, orderType])
+    }, [selectedInstrument, direction, orderType, accountInfo])
 
 
     // Validation function with manual debounce
@@ -360,10 +399,12 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     // Calculations
     const activeEntryPrice = orderType === 'LIMIT' ? limitPrice : entryPrice
     const riskPips = Math.abs(activeEntryPrice - stopLoss) * Math.pow(10, -pipLocation)
-    const riskAmount = Math.abs(activeEntryPrice - stopLoss) * units
+    const riskAmount = Math.abs(activeEntryPrice - stopLoss) * units * conversionRate
     const rewardPips = takeProfit ? Math.abs(takeProfit - activeEntryPrice) * Math.pow(10, -pipLocation) : 0
+    const rewardAmount = takeProfit ? Math.abs(takeProfit - activeEntryPrice) * units * conversionRate : 0
     const rrRatio = riskPips > 0 ? (rewardPips / riskPips).toFixed(2) : '0'
-    const riskPercent = (riskAmount / parseFloat(accountInfo?.balance || '1')) * 100
+    const riskPercent = (riskAmount / parseFloat(accountInfo?.account?.balance || accountInfo?.balance || '1')) * 100
+    const accountCurrency = accountInfo?.account?.currency || accountInfo?.currency || 'USD'
 
     // Live Pre-Trade Analytics
     const marketSnapshot = getMarketSessions(new Date())
@@ -522,7 +563,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 <input type="number" step="0.00001" value={stopLoss || ''} onChange={(e) => setStopLoss(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-red-500/30 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none" />
                                 {stopLoss > 0 && activeEntryPrice > 0 && (
                                     <p className="text-[10px] text-red-400 font-mono">
-                                        Risk: -${riskAmount.toFixed(2)} ({riskPips.toFixed(1)} pips)
+                                        Risk: -{riskAmount.toFixed(2)} {accountCurrency} ({riskPips.toFixed(1)} pips)
                                     </p>
                                 )}
                             </div>
@@ -531,7 +572,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 <input type="number" step="0.00001" value={takeProfit || ''} onChange={(e) => setTakeProfit(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-green-500/30 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none" />
                                 {takeProfit > 0 && activeEntryPrice > 0 && (
                                     <p className="text-[10px] text-green-400 font-mono">
-                                        Reward: +${(Math.abs(takeProfit - activeEntryPrice) * units).toFixed(2)} ({rewardPips.toFixed(1)} pips) &middot; R:R {rrRatio}
+                                        Reward: +{rewardAmount.toFixed(2)} {accountCurrency} ({rewardPips.toFixed(1)} pips) &middot; R:R {rrRatio}
                                     </p>
                                 )}
                             </div>
@@ -635,29 +676,28 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                     <span className="text-xs text-neutral-400">Your Position ({units.toLocaleString()} units)</span>
                                     <span className="text-[9px] px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded font-bold uppercase">Active</span>
                                 </div>
-                                <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-black text-white">
-                                        ${((Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units)).toFixed(2)}
+                                        {((Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units * conversionRate)).toFixed(2)}
                                     </span>
-                                    <span className="text-sm text-neutral-500">per pip</span>
+                                    <span className="text-sm text-neutral-500"> {accountCurrency} per pip</span>
                                 </div>
                                 <div className="mt-3 pt-3 border-t border-neutral-800/50">
                                     <div className="flex justify-between text-xs">
                                         <span className="text-neutral-500">10 pips move =</span>
                                         <span className="font-mono font-bold text-emerald-400">
-                                            ${(Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units * 10).toFixed(2)}
+                                            {(Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units * conversionRate * 10).toFixed(2)} {accountCurrency}
                                         </span>
                                     </div>
                                     <div className="flex justify-between text-xs mt-2">
                                         <span className="text-neutral-500">50 pips move =</span>
                                         <span className="font-mono font-bold text-blue-400">
-                                            ${(Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units * 50).toFixed(2)}
+                                            {(Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units * conversionRate * 50).toFixed(2)} {accountCurrency}
                                         </span>
                                     </div>
                                     <div className="flex justify-between text-xs mt-2">
                                         <span className="text-neutral-500">100 pips move =</span>
                                         <span className="font-mono font-bold text-purple-400">
-                                            ${(Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units * 100).toFixed(2)}
+                                            {(Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units * conversionRate * 100).toFixed(2)} {accountCurrency}
                                         </span>
                                     </div>
                                 </div>
@@ -680,7 +720,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                                     <span className="text-[9px] text-neutral-600 font-mono">({lot.units.toLocaleString()})</span>
                                                 </div>
                                                 <span className={`text-xs font-mono font-bold ${lot.color}`}>
-                                                    ${pipValue.toFixed(2)}/pip
+                                                    {(Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * lot.units * conversionRate).toFixed(2)} {accountCurrency}/pip
                                                 </span>
                                             </div>
                                         )
@@ -690,7 +730,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
 
                             <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3">
                                 <p className="text-[9px] text-blue-400/70 leading-relaxed">
-                                    💡 Each pip movement in your {direction} position at {units.toLocaleString()} units equals ${((Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units)).toFixed(2)} profit or loss.
+                                    💡 Each pip movement in your {direction} position at {units.toLocaleString()} units equals {(Math.abs(activeEntryPrice - (activeEntryPrice + Math.pow(10, pipLocation))) * units * conversionRate).toFixed(2)} {accountCurrency} profit or loss.
                                 </p>
                             </div>
                         </div>
@@ -750,7 +790,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 <AlertCircle className="text-red-400 mt-0.5 flex-shrink-0" size={16} />
                                 <div>
                                     <p className="text-sm font-bold text-red-400">Insufficient Margin Capital</p>
-                                    <p className="text-xs text-red-300">Requires <span className="font-mono">${marginRequired.toFixed(2)}</span> vs Balance <span className="font-mono">${parseFloat(accountInfo?.balance || '0').toFixed(2)} CAD</span>.</p>
+                                    <p className="text-xs text-red-300">Requires <span className="font-mono">{marginRequired.toFixed(2)} {accountCurrency}</span> vs Balance <span className="font-mono">{parseFloat(accountInfo?.account?.balance || accountInfo?.balance || '0').toFixed(2)} {accountCurrency}</span>.</p>
                                 </div>
                             </div>
                         )}

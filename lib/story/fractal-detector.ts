@@ -1,5 +1,6 @@
 import type { OandaCandle } from '@/lib/types/oanda'
 import type { CalculatedIndicators } from '@/lib/strategy/types'
+import { confirmBreakoutVolume } from '@/lib/utils/volume-profile'
 
 /**
  * Bill Williams Fractal Strategy Detector
@@ -19,6 +20,13 @@ export interface FractalSetup {
     setupScore: number
     setupDirection: 'buy' | 'sell' | 'none'
     signals: string[]
+    // Volume confirmation for fractal breakouts
+    volumeConfirmation: {
+        breakoutConfirmed: boolean     // true = volume supports the breakout
+        volumeRatio: number            // breakout bar volume vs avg (>1.0 = above avg)
+        verdict: string                // human-readable assessment
+        trapWarning: boolean           // true = thin volume breakout, likely fake
+    }
 }
 
 export function detectFractalSetup(
@@ -142,6 +150,38 @@ export function detectFractalSetup(
         signals.push('Volume above average — confirmation')
     }
 
+    // 7. Volume confirmation for the most recent fractal breakout
+    let volumeConfirmation = { breakoutConfirmed: false, volumeRatio: 1, verdict: 'no fractal to confirm', trapWarning: false }
+    const targetFractals = direction === 'buy' ? recentBullishFractals : direction === 'sell' ? recentBearishFractals : []
+    if (targetFractals.length > 0 && candles.length > 10) {
+        // Find the candle index of the most recent relevant fractal
+        const latestFractal = targetFractals[targetFractals.length - 1]
+        const fractalIdx = indicators.fractals.findIndex(
+            f => f.price === latestFractal.price && f.time === latestFractal.time
+        )
+        if (fractalIdx >= 0) {
+            // Check the bar AFTER the fractal (the breakout bar) or the last bar
+            const breakoutIdx = Math.min(indicators.fractals[fractalIdx].index + 3, lastIdx)
+            const vc = confirmBreakoutVolume(candles, breakoutIdx)
+            volumeConfirmation = {
+                breakoutConfirmed: vc.confirmed,
+                volumeRatio: vc.ratio,
+                verdict: vc.verdict,
+                trapWarning: vc.ratio < 0.7,
+            }
+
+            if (vc.confirmed) {
+                score += 5
+                signals.push(`Fractal breakout volume confirmed (${vc.ratio.toFixed(1)}x avg) — ${vc.verdict}`)
+            } else if (vc.ratio < 0.7) {
+                score = Math.max(0, score - 10)
+                signals.push(`⚠️ VOLUME TRAP WARNING: Fractal breakout on thin volume (${vc.ratio.toFixed(1)}x avg) — likely fake breakout`)
+            } else {
+                signals.push(`Fractal breakout volume weak (${vc.ratio.toFixed(1)}x avg) — ${vc.verdict}`)
+            }
+        }
+    }
+
     // If no direction could be established, score stays 0
     if (direction === 'none') score = 0
 
@@ -155,6 +195,7 @@ export function detectFractalSetup(
         setupScore: Math.min(100, score),
         setupDirection: direction,
         signals,
+        volumeConfirmation,
     }
 }
 
@@ -232,5 +273,6 @@ function emptySetup(): FractalSetup {
         setupScore: 0,
         setupDirection: 'none',
         signals: ['Insufficient data for fractal analysis'],
+        volumeConfirmation: { breakoutConfirmed: false, volumeRatio: 1, verdict: 'insufficient data', trapWarning: false },
     }
 }

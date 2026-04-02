@@ -326,8 +326,25 @@ ${Object.entries(data.amdPhases).map(([tf, p]) => `- ${tf}: ${p.phase} (${p.conf
 ${data.timeframes.map(tf => {
     const fa = tf.fractalAnalysis
     if (!fa) return `- ${tf.timeframe}: No fractal data`
-    return `- ${tf.timeframe}: Alligator ${fa.alligatorState} (${fa.alligatorDirection}), AO: ${fa.aoStatus.signal}, AC: ${fa.acStatus.consecutiveGreen}G/${fa.acStatus.consecutiveRed}R, Setup: ${fa.setupScore}/100 → ${fa.setupDirection}${fa.signals.length > 0 ? ` | ${fa.signals.join('; ')}` : ''}`
+    const volTag = fa.volumeConfirmation?.trapWarning ? ' ⚠️ VOLUME TRAP' : fa.volumeConfirmation?.breakoutConfirmed ? ' ✓ Vol Confirmed' : ''
+    return `- ${tf.timeframe}: Alligator ${fa.alligatorState} (${fa.alligatorDirection}), AO: ${fa.aoStatus.signal}, AC: ${fa.acStatus.consecutiveGreen}G/${fa.acStatus.consecutiveRed}R, Setup: ${fa.setupScore}/100 → ${fa.setupDirection}${volTag}${fa.signals.length > 0 ? ` | ${fa.signals.join('; ')}` : ''}`
 }).join('\n')}
+
+### Volume Flow Intelligence (Algorithmic — Order Flow Proxy)
+This data shows WHERE big money has been placed. Use it to validate or challenge Gemini/DeepSeek levels.
+${data.timeframes.filter(tf => ['D', 'H4', 'H1'].includes(tf.timeframe)).map(tf => {
+    const vf = tf.indicators.volumeFlow
+    const vp = vf.volumeProfile
+    return `- **${tf.timeframe}**: VPOC: ${vp.vpoc.toFixed(5)} | VA: ${vp.valueAreaLow.toFixed(5)}–${vp.valueAreaHigh.toFixed(5)} | HVN: ${vp.hvn.slice(0, 3).map(p => p.toFixed(5)).join(', ') || 'none'} | LVN: ${vp.lvn.slice(0, 3).map(p => p.toFixed(5)).join(', ') || 'none'} | VWAP: ${vf.vwap[vf.vwap.length - 1]?.toFixed(5) || 'N/A'}${vf.exhaustion.detected ? ` | ⚠️ ${vf.exhaustion.type.toUpperCase()} (${vf.exhaustion.severity})` : ''}`
+}).join('\n')}
+
+**Volume Flow Rules for Narrative**:
+- VPOC = "The battlefield" — where the most fighting happened. Treat it as the gravity center.
+- HVN = "The fortresses" — where big players have dug in. Price bounces here.
+- LVN = "No man's land" — price moves fast through these zones. Weak support/resistance.
+- Value Area = "Fair value" — price outside VA is overextended.
+- If Volume Exhaustion is detected, weave it into the narrative as "the attacking side running out of ammunition."
+- If a fractal has a VOLUME TRAP warning, describe it as "Smart Money baiting retail traders into a fake breakout."
 
 ## MORNING MEETING: THE DESK PERSONA
 **CRITICAL**: The desk characters (Marcus, Sarah, Ray, Alex) only huddle during POSITION EPISODES (entry or management).
@@ -353,21 +370,23 @@ ${data.timeframes.map(tf => {
 
 ## YOUR TASK
 
+**TOKEN BUDGET: Your entire JSON response must be ≤2000 tokens. Be ruthlessly concise.**
+
 Write Episode ${currentEpisodeNumber} of the ${data.pair} story AND the Desk's huddle. Respond with this exact JSON structure:
 
 {
   "story_title": "A compelling episode title (like a TV episode name)",
-  "narrative": "A markdown-formatted narrative (3-5 paragraphs) that tells the story of what's happening in this pair RIGHT NOW. Use character metaphors (buyers/sellers as characters). Reference AMD phases. Make it engaging but technically accurate. Include specific price levels. Reference what happened in previous episodes if applicable. If scenarios were recently resolved, acknowledge the outcomes.",
+  "narrative": "A concise markdown narrative (2-3 SHORT paragraphs, max 150 words total) covering: (1) Current market state with specific price levels and key S/R, (2) Volume/momentum insight (HVN/LVN, exhaustion, VPOC if relevant), (3) What happens next (link to scenarios). Use buyer/seller character metaphors. Be direct and data-focused — no filler. Reference previous episode only if essential.",
   "characters": {
     "buyers": {
       "strength": "dominant" | "strong" | "balanced" | "weak" | "exhausted",
-      "momentum": "Brief description of buyer momentum",
-      "narrative": "2-3 sentences about what the buyers are doing"
+      "momentum": "1 short sentence (max 10 words)",
+      "narrative": "1-2 sentences max (current position + next move)"
     },
     "sellers": {
       "strength": "dominant" | "strong" | "balanced" | "weak" | "exhausted",
-      "momentum": "Brief description of seller momentum",
-      "narrative": "2-3 sentences about what the sellers are doing"
+      "momentum": "1 short sentence (max 10 words)",
+      "narrative": "1-2 sentences max (current position + next move)"
     }
   },
   "current_phase": "accumulation" | "manipulation" | "distribution",
@@ -375,7 +394,7 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story AND the Desk's h
     {
       "id": "scenario_a",
       "title": "Scenario A title (the more likely scenario)",
-      "description": "What happens in this scenario. Be specific about price movements.",
+      "description": "What happens if triggered (2-3 sentences max, focus on price path and key levels).",
       "probability": 0.0-1.0,
       "trigger_conditions": "Natural language description of what confirms this scenario",
       "invalidation": "Natural language description of what kills this scenario",
@@ -389,7 +408,7 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story AND the Desk's h
     {
       "id": "scenario_b",
       "title": "Scenario B title (the alternative)",
-      "description": "What happens in this scenario.",
+      "description": "What happens if triggered (2-3 sentences max, focus on price path and key levels).",
       "probability": 0.0-1.0,
       "trigger_conditions": "Natural language trigger conditions",
       "invalidation": "Natural language invalidation conditions",
@@ -406,32 +425,32 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story AND the Desk's h
     "stop_losses": [price1],
     "take_profits": [price1, price2, price3]
   },
-  "next_episode_preview": "A teaser for what to watch for in the next episode (1-2 sentences)",
+  "next_episode_preview": "One sentence: what price level or event triggers the next episode.",
   "confidence": 0.0-1.0,
   "bible_update": {
-    "arc_summary": "The COMPLETE arc summary for this pair's story so far, INCLUDING this episode's developments. This replaces the previous arc_summary entirely — do not just describe this episode, summarize the FULL story arc from episode 1 through now.",
+    "arc_summary": "Complete arc from Ep1 to now in 3-4 sentences. Focus on major turns and current state.",
     "key_events": [
-      {"episode_number": 1, "event": "Description of key event", "significance": "Why it matters for the story"}
+      {"episode_number": 1, "event": "Brief event description", "significance": "One sentence why it matters"}
     ],
     "character_evolution": {
-      "buyers": {"arc": "The full character arc of buyers from episode 1 to now", "turning_points": ["Key moments that changed buyers' trajectory"]},
-      "sellers": {"arc": "The full character arc of sellers from episode 1 to now", "turning_points": ["Key moments that changed sellers' trajectory"]}
+      "buyers": {"arc": "Full arc in 2 sentences", "turning_points": ["Brief bullet points"]},
+      "sellers": {"arc": "Full arc in 2 sentences", "turning_points": ["Brief bullet points"]}
     },
     "unresolved_threads": [
-      {"thread": "Thread name", "introduced_episode": 1, "description": "What this thread is about and why it matters"}
+      {"thread": "Thread name", "introduced_episode": 1, "description": "One sentence description"}
     ],
     "resolved_threads": [
-      {"thread": "Thread name", "introduced_episode": 1, "resolved_episode": ${currentEpisodeNumber}, "outcome": "How this thread resolved"}
+      {"thread": "Thread name", "introduced_episode": 1, "resolved_episode": ${currentEpisodeNumber}, "outcome": "One sentence outcome"}
     ],
     "dominant_themes": ["Theme 1", "Theme 2"],
-    "trade_history_summary": "Concise summary of ALL trades the user has taken on this pair across all seasons — which episodes they entered, exited, won, lost. This is the trader's personal journey within the story.",
-    "lessons_learned": ["Lesson 1: Why we failed last time", "Lesson 2: What we learned about this instrument."]
+    "trade_history_summary": "2-3 sentences: key trades, win/loss pattern, current position status.",
+    "lessons_learned": ["One sentence per lesson — focus on actionable insights only"]
   },
   "is_season_finale": true | false,
   "position_guidance": {
     "action": "enter_long" | "enter_short" | "set_limit_long" | "set_limit_short" | "hold" | "adjust" | "close" | "wait",
     "confidence": 0.0-1.0,
-    "reasoning": "2-3 sentences explaining why this action is recommended",
+    "reasoning": "1-2 sentences max: what factor drives this decision (volume, level, momentum).",
     "entry_price": 1.2345,
     "stop_loss": 1.2300,
     "take_profit_1": 1.2500,
@@ -447,10 +466,10 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story AND the Desk's h
     "favored_scenario_id": "scenario_a"
   },
   "desk_messages": [
-    { "speaker": "ray", "message": "Statistical reaction...", "tone": "neutral|positive|cautious|warning", "message_type": "comment" },
-    { "speaker": "sarah", "message": "Risk/Psychology reaction...", "tone": "neutral|positive|cautious|warning", "message_type": "comment|alert|block" },
-    { "speaker": "alex", "message": "Macro reaction...", "tone": "neutral|positive|cautious|warning", "message_type": "comment" },
-    { "speaker": "marcus", "message": "Final verdict summary...", "tone": "neutral|positive|cautious|warning", "message_type": "comment|approval|challenge|block" }
+    { "speaker": "ray", "message": "1-2 sentences: edge validation or concern", "tone": "neutral|positive|cautious|warning", "message_type": "comment" },
+    { "speaker": "sarah", "message": "1-2 sentences: risk/psychology check or alert", "tone": "neutral|positive|cautious|warning", "message_type": "comment|alert|block" },
+    { "speaker": "alex", "message": "1-2 sentences: greed/fear reaction", "tone": "neutral|positive|cautious|warning", "message_type": "comment" },
+    { "speaker": "marcus", "message": "1-2 sentences: final verdict", "tone": "neutral|positive|cautious|warning", "message_type": "comment|approval|challenge|block" }
   ],
   "desk_evaluation": {
     "verdict": "approved" | "caution" | "blocked" | "neutral",
@@ -517,15 +536,17 @@ VOLATILITY IN SEASONS:
 - Reference the volatility arc across the season: "This season began in compression, expanded through the middle episodes, and is now showing signs of exhaustion"
 
 IMPORTANT RULES:
+- **CONCISENESS MANDATE**: Every field has strict word/sentence limits. Respect them. No fluff.
 - The narrative must be engaging but grounded in the data
 - Always provide exactly 2 scenarios (binary decision tree)
 - Scenario probabilities must sum to ~1.0
 - Key levels must be precise prices from the analysis
 - Reference AMD phases naturally in the narrative
-- If previous episodes exist, maintain continuity (reference what happened before)
-- If scenarios were recently resolved, acknowledge the outcomes in your narrative. **ESPECIALLY** if they were high-confidence failures (e.g. you had >75% probability and it was invalidated).
-- If season archive exists, reference past seasons when relevant (callbacks enrich the story)
+- If previous episodes exist, maintain continuity (reference what happened before) — but ONLY if essential to current decision
+- If scenarios were recently resolved, acknowledge the outcomes in ONE sentence. **ESPECIALLY** if they were high-confidence failures (e.g. you had >75% probability and it was invalidated).
+- If season archive exists, reference past seasons ONLY when directly relevant to current setup
 - The story should help the trader UNDERSTAND the market, not just give signals
+- **CUT FILLER**: No "as we can see", "it's worth noting", "interestingly", "furthermore". Just facts and levels.
 
 ANTI-HALLUCINATION RULES (MANDATORY):
 - Every price level you cite MUST come from Gemini's structural analysis or DeepSeek's quantitative validation. NEVER invent levels.

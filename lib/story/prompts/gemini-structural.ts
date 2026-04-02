@@ -36,7 +36,12 @@ export function buildStoryStructuralPrompt(
 - **Alligator**: ${tf.fractalAnalysis?.alligatorState ?? 'N/A'} (${tf.fractalAnalysis?.alligatorDirection ?? 'N/A'}), Jaw: ${tf.indicators.alligator.jaw.slice(-1)[0]?.toFixed(5) ?? 'N/A'}, Teeth: ${tf.indicators.alligator.teeth.slice(-1)[0]?.toFixed(5) ?? 'N/A'}, Lips: ${tf.indicators.alligator.lips.slice(-1)[0]?.toFixed(5) ?? 'N/A'}
 - **Fractals**: Bullish: ${tf.fractalAnalysis?.recentBullishFractals.slice(-3).map(f => f.price.toFixed(5)).join(', ') || 'none'} | Bearish: ${tf.fractalAnalysis?.recentBearishFractals.slice(-3).map(f => f.price.toFixed(5)).join(', ') || 'none'}
 - **AO**: ${tf.fractalAnalysis?.aoStatus.value.toFixed(6) ?? 'N/A'} (${tf.fractalAnalysis?.aoStatus.signal ?? 'N/A'})
-- **BW Setup**: ${tf.fractalAnalysis?.setupScore ?? 0}/100 → ${tf.fractalAnalysis?.setupDirection ?? 'none'}
+- **BW Setup**: ${tf.fractalAnalysis?.setupScore ?? 0}/100 → ${tf.fractalAnalysis?.setupDirection ?? 'none'}${tf.fractalAnalysis?.volumeConfirmation?.trapWarning ? ' ⚠️ VOLUME TRAP WARNING' : tf.fractalAnalysis?.volumeConfirmation?.breakoutConfirmed ? ' ✓ Volume confirmed' : ''}
+- **Volume Profile**: VPOC: ${tf.indicators.volumeFlow.volumeProfile.vpoc.toFixed(5)}, VA: ${tf.indicators.volumeFlow.volumeProfile.valueAreaLow.toFixed(5)}–${tf.indicators.volumeFlow.volumeProfile.valueAreaHigh.toFixed(5)}
+- **HVN (Real S/R)**: ${tf.indicators.volumeFlow.volumeProfile.hvn.slice(0, 3).map(p => p.toFixed(5)).join(', ') || 'none'}
+- **LVN (Fast-move zones)**: ${tf.indicators.volumeFlow.volumeProfile.lvn.slice(0, 3).map(p => p.toFixed(5)).join(', ') || 'none'}
+- **VWAP**: ${tf.indicators.volumeFlow.vwap[tf.indicators.volumeFlow.vwap.length - 1]?.toFixed(5) || 'N/A'}
+- **Volume Exhaustion**: ${tf.indicators.volumeFlow.exhaustion.detected ? `${tf.indicators.volumeFlow.exhaustion.type} (${tf.indicators.volumeFlow.exhaustion.severity}) — ${tf.indicators.volumeFlow.exhaustion.description}` : 'None detected'}
 - **Last 5 candles**: ${last5.map(c => `${parseFloat(c.mid.o).toFixed(5)}->${parseFloat(c.mid.c).toFixed(5)} (H:${parseFloat(c.mid.h).toFixed(5)} L:${parseFloat(c.mid.l).toFixed(5)})`).join(' | ')}`
     }).join('\n\n')
 
@@ -103,7 +108,16 @@ Analyze ALL the data above and produce a JSON response:
   "optimization_suggestions": ["What indicators are most relevant given current structure?"]
 }
 
-**Bill Williams Fractal Analysis**: When the Alligator is 'eating' or 'awakening', note the direction and nearest valid fractals (those beyond the Teeth line). These are high-probability confluence zones. When the Alligator is 'sleeping', flag it as a compression/range phase — a breakout setup is building.
+**Bill Williams Fractal Analysis**: When the Alligator is 'eating' or 'awakening', note the direction and nearest valid fractals (those beyond the Teeth line). These are high-probability confluence zones. When the Alligator is 'sleeping', flag it as a compression/range phase — a breakout setup is building. If a fractal breakout has a VOLUME TRAP WARNING, flag it as a likely fake breakout regardless of other signals.
+
+**Volume Flow Intelligence**: Use volume data as the SECOND LAYER of S/R validation:
+- **VPOC** is the single strongest price level — where the most business was done. Treat it as the most important S/R level on each timeframe.
+- **HVN (High Volume Nodes)** are the "real" support/resistance — where big money has been placed. Price approaching an HVN will likely bounce or stall.
+- **LVN (Low Volume Nodes)** are "thin air" zones — price moves fast through these. They are weak S/R.
+- **Value Area** (70% of volume) is the "fair value" range. Price outside the VA is overextended and likely to revert.
+- **VWAP** is the institutional average price — it acts as dynamic S/R. Price below VWAP = undervalued, above = overvalued.
+- **Volume Exhaustion**: If detected, it means the current trend is losing steam. Flag this in your structural narrative.
+- When citing key_levels, PRIORITIZE levels that align with HVN over traditional swing highs/lows. A swing high that also sits at an HVN is far more significant than one at an LVN.
 
 **Cross-Market Validation**: If your structural bias contradicts the cross-market risk appetite (e.g., you're bullish but risk is off and equities are dumping), note this tension explicitly. Cross-market divergences often precede reversals.
 

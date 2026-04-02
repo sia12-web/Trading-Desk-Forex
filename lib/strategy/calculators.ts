@@ -17,6 +17,7 @@ import {
     calculateFractals,
     calculateGatorOscillator,
 } from "@/lib/utils/indicators"
+import { buildVolumeProfile, calculateVWAP, detectVolumeExhaustion } from "@/lib/utils/volume-profile"
 
 export function calculateAllIndicators(
     candles: OandaCandle[],
@@ -118,6 +119,11 @@ export function calculateAllIndicators(
         return ((u - l) / m) * 100
     })
 
+    // Volume Flow Analysis
+    const volumeProfile = buildVolumeProfile(candles)
+    const vwap = calculateVWAP(candles)
+    const exhaustion = detectVolumeExhaustion(candles)
+
     return {
         ema: emaObj,
         sma: smaObj,
@@ -136,6 +142,19 @@ export function calculateAllIndicators(
         adx: adxResult.adx,
         volume: volumes,
         volumeSma: calculateSMA(volumes, 20),
+        // Volume Flow Analysis
+        volumeFlow: {
+            volumeProfile: {
+                vpoc: volumeProfile.vpoc,
+                valueAreaHigh: volumeProfile.valueAreaHigh,
+                valueAreaLow: volumeProfile.valueAreaLow,
+                hvn: volumeProfile.hvn,
+                lvn: volumeProfile.lvn,
+                totalVolume: volumeProfile.totalVolume,
+            },
+            vwap,
+            exhaustion,
+        },
         // Bill Williams
         alligator: {
             jaw: alligatorResult.jaw,

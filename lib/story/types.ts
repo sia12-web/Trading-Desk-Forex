@@ -22,6 +22,12 @@ export interface TimeframeData {
         setupScore: number
         setupDirection: 'buy' | 'sell' | 'none'
         signals: string[]
+        volumeConfirmation: {
+            breakoutConfirmed: boolean
+            volumeRatio: number
+            verdict: string
+            trapWarning: boolean
+        }
     }
 }
 

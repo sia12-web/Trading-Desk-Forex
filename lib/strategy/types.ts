@@ -14,6 +14,24 @@ export interface PivotPointLevels {
     m4: number     // Midpoint between S1 and S2
 }
 
+export interface VolumeFlowData {
+    volumeProfile: {
+        vpoc: number              // Volume Point of Control — single strongest S/R level
+        valueAreaHigh: number     // Upper bound of 70% value area
+        valueAreaLow: number      // Lower bound of 70% value area
+        hvn: number[]             // High Volume Nodes (real S/R where big money sits)
+        lvn: number[]             // Low Volume Nodes (thin zones, fast moves)
+        totalVolume: number
+    }
+    vwap: number[]                // Volume-Weighted Average Price series
+    exhaustion: {
+        detected: boolean
+        type: 'bullish_exhaustion' | 'bearish_exhaustion' | 'none'
+        severity: 'mild' | 'moderate' | 'strong'
+        description: string
+    }
+}
+
 export interface CalculatedIndicators {
     ema: Record<number, number[]>  // period → values
     sma: Record<number, number[]>
@@ -28,6 +46,8 @@ export interface CalculatedIndicators {
     adx: number[]
     volume: number[]
     volumeSma: number[]
+    // Volume Flow Analysis
+    volumeFlow: VolumeFlowData
     // Bill Williams indicators
     alligator: {
         jaw: number[]

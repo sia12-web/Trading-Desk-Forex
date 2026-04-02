@@ -21,6 +21,7 @@ export function buildStoryQuantPrompt(
         const stochK = i.stochastic.k.slice(-5)
         const stochD = i.stochastic.d.slice(-5)
 
+        const vf = i.volumeFlow
         return `### ${tf.timeframe}
 - ADX (last 10): [${adxValues.map(v => v.toFixed(1)).join(', ')}]
 - RSI (last 10): [${rsiValues.map(v => v.toFixed(1)).join(', ')}]
@@ -32,8 +33,13 @@ export function buildStoryQuantPrompt(
 - Alligator: jaw=${i.alligator.jaw.slice(-1)[0]?.toFixed(6) || 'N/A'}, teeth=${i.alligator.teeth.slice(-1)[0]?.toFixed(6) || 'N/A'}, lips=${i.alligator.lips.slice(-1)[0]?.toFixed(6) || 'N/A'}, state=${i.alligator.state.slice(-1)[0] || 'N/A'}
 - AO (last 5): [${i.awesomeOscillator.slice(-5).map(v => isNaN(v) ? 'NaN' : v.toFixed(6)).join(', ')}]
 - AC (last 5): [${i.acceleratorOscillator.slice(-5).map(v => isNaN(v) ? 'NaN' : v.toFixed(6)).join(', ')}]
-- BW Setup: score=${tf.fractalAnalysis?.setupScore ?? 0}/100, direction=${tf.fractalAnalysis?.setupDirection ?? 'none'}
+- BW Setup: score=${tf.fractalAnalysis?.setupScore ?? 0}/100, direction=${tf.fractalAnalysis?.setupDirection ?? 'none'}${tf.fractalAnalysis?.volumeConfirmation?.trapWarning ? ' ⚠️ TRAP' : tf.fractalAnalysis?.volumeConfirmation?.breakoutConfirmed ? ' ✓VOL' : ''}
 - BW Signals: ${tf.fractalAnalysis?.signals.join('; ') || 'none'}
+- Volume Profile: VPOC=${vf.volumeProfile.vpoc.toFixed(6)}, VA=${vf.volumeProfile.valueAreaLow.toFixed(6)}–${vf.volumeProfile.valueAreaHigh.toFixed(6)}
+- HVN (real S/R): [${vf.volumeProfile.hvn.slice(0, 4).map(p => p.toFixed(6)).join(', ') || 'none'}]
+- LVN (thin zones): [${vf.volumeProfile.lvn.slice(0, 4).map(p => p.toFixed(6)).join(', ') || 'none'}]
+- VWAP: ${vf.vwap[vf.vwap.length - 1]?.toFixed(6) || 'N/A'}
+- Volume Exhaustion: ${vf.exhaustion.detected ? `${vf.exhaustion.type} (${vf.exhaustion.severity})` : 'none'}
 - Trend score: ${tf.trend.score}/100 (${tf.trend.direction})`
     }).join('\n\n')
 
@@ -53,6 +59,13 @@ Your job is to validate the structural analysis with hard numbers and compute pr
 - Cross-check fractal levels against Alligator teeth position — fractals inside the "mouth" (between jaw and teeth) are NOT valid Bill Williams signals.
 - Include a "flagged_levels" array in your output listing any suspicious levels with reasons.
 - Your own precise_levels must ONLY use prices derivable from actual candle data.
+
+## VOLUME FLOW VALIDATION (MANDATORY)
+- Cross-validate Gemini's key levels against Volume Profile HVN. Levels at HVN are STRONGER than levels at LVN.
+- If Gemini cites a support/resistance that sits at an LVN (thin volume), downgrade its reliability in your assessment.
+- VPOC is the single most statistically significant price level — if Gemini misses it, add it to your own levels.
+- If Volume Exhaustion is detected on D or H4, flag it as a potential trend reversal risk regardless of other indicators.
+- If a fractal breakout has a VOLUME TRAP WARNING, it must be flagged as unreliable even if other BW indicators confirm.
 
 ## PAIR: ${data.pair}
 **Current Price**: ${data.currentPrice.toFixed(5)}

@@ -12,16 +12,16 @@ export async function POST() {
     try {
         const results: Record<string, number> = {}
 
-        // Phase 1 — FK children first
+        // Phase 1 — FK children first (delete tables that are referenced by others)
         const phase1Tables = [
             'story_position_adjustments',
-            'story_scenarios',
+            'story_episodes', // Must delete before story_scenarios (FK: triggered_scenario_id)
         ]
 
-        // Phase 2 — Everything else
+        // Phase 2 — Parent tables and everything else
         const phase2Tables = [
+            'story_scenarios', // Can delete after story_episodes
             'story_positions',
-            'story_episodes',
             'story_bibles',
             'story_seasons',
             'story_agent_reports',
@@ -34,8 +34,6 @@ export async function POST() {
             'indicator_optimizations',
             'structural_analysis_cache',
             'wave_analysis',
-            'big_picture_analysis',
-            'technical_analyses',
         ]
 
         const deleteFromTable = async (table: string) => {
@@ -44,8 +42,15 @@ export async function POST() {
                 .delete()
                 .eq('user_id', user.id)
 
-            if (error && !error.message.includes('does not exist')) {
-                console.error(`[reset-memory] Error deleting from ${table}:`, error.message)
+            if (error) {
+                // Ignore errors for non-existent tables
+                const isTableNotFound =
+                    error.message.includes('does not exist') ||
+                    error.message.includes('Could not find the table')
+
+                if (!isTableNotFound) {
+                    console.error(`[reset-memory] Error deleting from ${table}:`, error.message)
+                }
             }
             results[table] = count ?? 0
         }
@@ -64,7 +69,7 @@ export async function POST() {
         const categories = {
             story: ['story_position_adjustments', 'story_scenarios', 'story_positions', 'story_episodes', 'story_bibles', 'story_seasons', 'story_agent_reports', 'pair_subscriptions', 'desk_messages', 'process_scores', 'desk_state'],
             cms: ['cms_analyses', 'scenario_analyses'],
-            analysis_cache: ['indicator_optimizations', 'structural_analysis_cache', 'wave_analysis', 'big_picture_analysis', 'technical_analyses'],
+            analysis_cache: ['indicator_optimizations', 'structural_analysis_cache', 'wave_analysis'],
         }
 
         const categorySummary: Record<string, number> = {}

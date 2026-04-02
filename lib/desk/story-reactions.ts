@@ -26,6 +26,13 @@ export interface StoryReactionContext {
     atr14: number
     atr50: number
     volatilityStatus: string  // 'spike' | 'hot' | 'normal' | 'cold'
+    fractalAnalysis?: {
+        alligatorState: 'sleeping' | 'awakening' | 'eating' | 'sated'
+        alligatorDirection: 'bullish' | 'bearish' | 'neutral'
+        setupScore: number
+        setupDirection: 'buy' | 'sell' | 'none'
+        signals: string[]
+    }
 }
 
 // ── AI Output Types ──
@@ -63,7 +70,7 @@ export async function generatePositionEntryReaction(
         // 2. Build prompt
         const prompt = buildPositionEntryReactionPrompt(
             ctx.pair, guidance, storyTitle, psychology, ctx.currentPrice, ctx.atr14,
-            ctx.atr50, ctx.volatilityStatus,
+            ctx.atr50, ctx.volatilityStatus, ctx.fractalAnalysis,
         )
 
         // 3. Call Gemini

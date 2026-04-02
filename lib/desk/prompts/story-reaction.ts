@@ -24,6 +24,13 @@ export function buildPositionEntryReactionPrompt(
     atr14: number,
     atr50: number,
     volatilityStatus: string,
+    fractalAnalysis?: {
+        alligatorState: string
+        alligatorDirection: string
+        setupScore: number
+        setupDirection: string
+        signals: string[]
+    },
 ): string {
     const config = getAssetConfig(pair)
     const mult = config.pointMultiplier
@@ -64,6 +71,22 @@ ${tp1Points ? `- TP distance vs daily ATR: ${(tp1Points / atr14).toFixed(1)}x da
 ${isCold ? `- COLD MARKET: The market is moving LESS than average. A ${tp1Points ? tp1Points.toFixed(0) : '?'} ${label} target in a market averaging ${atr14.toFixed(0)} ${label}/day is questionable without a catalyst.` : ''}
 ${isSpike ? `- SPIKE: Volatility is 1.5x+ above average. Wider stops needed. Whipsaw risk elevated.` : ''}
 
+${fractalAnalysis ? `## BILL WILLIAMS FRACTAL CHECKLIST (for Ray's validation)
+
+Setup Score: ${fractalAnalysis.setupScore}/100 → ${fractalAnalysis.setupDirection}
+Alligator State: ${fractalAnalysis.alligatorState} (${fractalAnalysis.alligatorDirection})
+Signals Detected: ${fractalAnalysis.signals.length > 0 ? fractalAnalysis.signals.join(', ') : 'none'}
+
+**6-ITEM CHECKLIST** (Ray must validate if this is a fractal-based entry):
+1. ✓/✗ Alligator Awake — State must be 'eating' or 'awakening', NOT 'sleeping'
+2. ✓/✗ Price Beyond Alligator — Price must be above ALL 3 lines (longs) or below ALL 3 (shorts)
+3. ✓/✗ Valid Fractal Signal — Fractal must be BEYOND the Teeth line (not inside the mouth)
+4. ✓/✗ AO Confirmation — Awesome Oscillator positive for longs, negative for shorts
+5. ✓/✗ AC Green/Red Bars — 2+ consecutive green (longs) or red (shorts) bars
+6. ✓/✗ ATR-Based Stop — Stop placed below recent fractal or Jaw (whichever is more conservative)
+
+**Ray's Task**: If setup score is <60/100 OR Alligator is 'sleeping', flag this as a weak fractal setup. Only high-score setups (70+) during 'eating' phase are institutional-grade.
+` : ''}
 ## TRADER PSYCHOLOGY
 
 Process Streak: ${psychology.streak} consecutive 7+ scores
@@ -75,7 +98,7 @@ Violations This Week: ${psychology.violationsThisWeek}
 
 ## CHARACTERS
 
-- **RAY (Quant — Transitioning to 5%):** Focus on **"The Value"**. He reviews if price is actually at a level where smart money plays (RSI/Momentum extremes). He denies entries that are just "chasing" without real value.
+- **RAY (Quant — Transitioning to 5%):** Focus on **"The Value"**. He reviews if price is actually at a level where smart money plays (RSI/Momentum extremes). ${fractalAnalysis ? `**FOR FRACTAL SETUPS**: Ray validates the 6-item Bill Williams checklist above. If setup score <60 or Alligator is sleeping, he MUST flag it as incomplete. If 5/6 criteria met but one is weak, he notes it.` : 'He denies entries that are just "chasing" without real value.'}
 - **SARAH (Risk — The 5% Resident):** The iron hand. She hates **"Pussy Moves"**. If the trader is closing because of a wiggle, she will alert that the "Pretty Girl" hasn't left the bar yet.
 - **ALEX (Macro — The 95% Struggle):** Represents Greed and Fear.
   - **WINNING**: Suggests "Pussy Moves" to close early because he's scared of a pull-back.

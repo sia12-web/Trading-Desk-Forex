@@ -446,11 +446,22 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
         // Claude generates baseline desk_messages for narrative coherence, but we
         // use a dedicated Gemini Flash pass for deeper, focused character reactions.
         if (episodeType !== 'analysis' && result.position_guidance) {
+            // Extract Daily timeframe fractal analysis for desk validation
+            const dailyTF = data.timeframes.find(tf => tf.timeframe === 'D')
+            const fractalAnalysis = dailyTF?.fractalAnalysis ? {
+                alligatorState: dailyTF.fractalAnalysis.alligatorState,
+                alligatorDirection: dailyTF.fractalAnalysis.alligatorDirection,
+                setupScore: dailyTF.fractalAnalysis.setupScore,
+                setupDirection: dailyTF.fractalAnalysis.setupDirection,
+                signals: dailyTF.fractalAnalysis.signals,
+            } : undefined
+
             const reactionCtx: StoryReactionContext = {
                 userId, pair, episodeId: episode.id,
                 episodeNumber, seasonNumber, episodeType,
                 currentPrice: data.currentPrice, atr14: data.atr14,
                 atr50: data.atr50, volatilityStatus: data.volatilityStatus,
+                fractalAnalysis,
             }
 
             if (episodeType === 'position_entry') {

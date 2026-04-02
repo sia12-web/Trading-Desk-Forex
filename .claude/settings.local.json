@@ -78,7 +78,9 @@
       "Bash(if not exist \"C:\\\\Users\\\\shahb\\\\myApplications\\\\Trade Desk-Stocks\\\\supabase\\\\migrations\" mkdir \"C:\\\\Users\\\\shahb\\\\myApplications\\\\Trade Desk-Stocks\\\\supabase\\\\migrations\")",
       "Bash(powershell -Command:*)",
       "Bash(powershell -NoProfile -Command \"$f = ''C:\\\\Users\\\\shahb\\\\.claude\\\\projects\\\\C--Users-shahb-myApplications-Trade-Desk-Forex\\\\5a98b646-876c-45f3-94c1-530e2a2d88d1.jsonl''; $sr = [System.IO.StreamReader]::new\\($f\\); $all = @\\(\\); while\\($null -ne \\($l = $sr.ReadLine\\(\\)\\)\\){ $all += $l }; $sr.Close\\(\\); Write-Output $all[-1].Substring\\(0, [Math]::Min\\($all[-1].Length, 5000\\)\\)\")",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(institutional-grade. Entry at the fractal is The Value.\"\n\nOR:\n\n\"Setup score 52/100, Alligator still sleeping — this is premature. Wait for)",
+      "Bash(the breakout confirmation before entry.\"\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,

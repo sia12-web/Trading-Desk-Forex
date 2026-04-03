@@ -65,7 +65,7 @@ export async function calibrateForPairAndTimeframe(userId: string, pair: string,
     const summary = prepareDataSummary(candles)
 
     // 3. Prompt DeepSeek for optimized parameters
-    const settings = await promptDeepSeekForCalibration(pair, timeframe, summary)
+    const settings = await promptDeepSeekForCalibration(userId, pair, timeframe, summary)
 
     // 4. Save to database
     await saveCalibration(userId, pair, timeframe, settings)
@@ -96,7 +96,7 @@ function prepareDataSummary(candles: OandaCandle[]) {
     }
 }
 
-async function promptDeepSeekForCalibration(pair: string, timeframe: Timeframe, summary: any): Promise<IndicatorSettings> {
+async function promptDeepSeekForCalibration(userId: string, pair: string, timeframe: Timeframe, summary: any): Promise<IndicatorSettings> {
     const prompt = `
 Act as a professional quantitative trading analyst. 
 You are optimizing technical indicator parameters for the instrument ${pair} on the ${timeframe} timeframe.
@@ -134,7 +134,7 @@ Provide ONLY the JSON object. Do not explain your reasoning.
 
     const response = await callDeepSeek(prompt, {
         maxTokens: 1000,
-        usage: { feature: 'indicator-calibration', userId: 'system' }
+        usage: { feature: 'indicator-calibration', userId }
     })
 
     // Extract JSON from response

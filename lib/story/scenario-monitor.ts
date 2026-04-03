@@ -18,6 +18,7 @@ interface MonitorableScenario {
     invalidation_level: number
     invalidation_direction: 'above' | 'below'
     episode_id: string
+    probability: number
 }
 
 interface MonitorResult {
@@ -62,7 +63,7 @@ export function isMarketOpen(): boolean {
 async function getMonitorableScenarios(client: SupabaseClient): Promise<MonitorableScenario[]> {
     const { data, error } = await client
         .from('story_scenarios')
-        .select('id, user_id, pair, title, direction, trigger_level, trigger_direction, trigger_timeframe, invalidation_level, invalidation_direction, episode_id')
+        .select('id, user_id, pair, title, direction, trigger_level, trigger_direction, trigger_timeframe, invalidation_level, invalidation_direction, episode_id, probability')
         .eq('status', 'active')
         .eq('monitor_active', true)
         .not('trigger_level', 'is', null)
@@ -79,20 +80,40 @@ async function getMonitorableScenarios(client: SupabaseClient): Promise<Monitora
 /**
  * Check if a candle close has crossed a scenario's trigger or invalidation level.
  * Uses candle CLOSE price, not spot price — prevents false triggers from wicks.
+ *
+ * HIGH-CONFIDENCE OPTIMIZATION (NEW):
+ * For scenarios with probability >= 55%, we allow triggering at 85% proximity
+ * to avoid missing good entries. Conservative approach remains for low-confidence scenarios.
  */
 function evaluateScenario(
     scenario: MonitorableScenario,
     closePrice: number
 ): 'triggered' | 'invalidated' | null {
-    // Check trigger
-    if (scenario.trigger_direction === 'above' && closePrice >= scenario.trigger_level) {
-        return 'triggered'
+    const isHighConfidence = scenario.probability >= 0.55
+    const proximityThreshold = isHighConfidence ? 0.85 : 1.0 // 85% for high confidence, 100% for low
+
+    // Calculate the range between invalidation and trigger
+    const range = Math.abs(scenario.trigger_level - scenario.invalidation_level)
+
+    // ── Check trigger (with proximity optimization for high-confidence scenarios) ──
+    if (scenario.trigger_direction === 'above') {
+        // Bullish: trigger is above current, invalidation is below
+        // 85% proximity: price has moved 85% of the way from invalidation to trigger
+        const proximityLevel = scenario.invalidation_level + (range * proximityThreshold)
+        if (closePrice >= proximityLevel) {
+            return 'triggered'
+        }
     }
-    if (scenario.trigger_direction === 'below' && closePrice <= scenario.trigger_level) {
-        return 'triggered'
+    if (scenario.trigger_direction === 'below') {
+        // Bearish: trigger is below current, invalidation is above
+        // 85% proximity: price has moved 85% of the way from invalidation to trigger
+        const proximityLevel = scenario.invalidation_level - (range * proximityThreshold)
+        if (closePrice <= proximityLevel) {
+            return 'triggered'
+        }
     }
 
-    // Check invalidation
+    // ── Check invalidation (always 100% - no proximity leniency) ──
     if (scenario.invalidation_direction === 'above' && closePrice >= scenario.invalidation_level) {
         return 'invalidated'
     }
@@ -294,8 +315,17 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
 
         // Resolve the scenario
         const candleTimeStr = candleData?.time ? ` (candle: ${new Date(candleData.time).toISOString()})` : ''
+        const isHighConfidence = scenario.probability >= 0.55
+        const exactHit = evaluation === 'triggered' && (
+            (scenario.trigger_direction === 'above' && priceUsed >= scenario.trigger_level) ||
+            (scenario.trigger_direction === 'below' && priceUsed <= scenario.trigger_level)
+        )
+        const proximityTrigger = evaluation === 'triggered' && !exactHit && isHighConfidence
+
         const outcomeNotes = evaluation === 'triggered'
-            ? `Bot detected: ${tf} candle close at ${priceUsed.toFixed(5)} confirmed trigger level ${scenario.trigger_level} (${scenario.trigger_direction})${candleTimeStr}`
+            ? proximityTrigger
+                ? `Bot detected: ${tf} candle close at ${priceUsed.toFixed(5)} reached 85% proximity to trigger level ${scenario.trigger_level.toFixed(5)} (${scenario.trigger_direction}). High-confidence scenario (${Math.round(scenario.probability * 100)}%) triggered early to avoid missing entry.${candleTimeStr}`
+                : `Bot detected: ${tf} candle close at ${priceUsed.toFixed(5)} confirmed trigger level ${scenario.trigger_level.toFixed(5)} (${scenario.trigger_direction})${candleTimeStr}`
             : `Bot detected: ${method} ${priceUsed.toFixed(5)} crossed invalidation level ${scenario.invalidation_level} (${scenario.invalidation_direction})`
 
         // Check if this was a high-confidence prediction failure

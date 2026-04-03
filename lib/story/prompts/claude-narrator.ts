@@ -330,6 +330,26 @@ ${data.timeframes.map(tf => {
     return `- ${tf.timeframe}: Alligator ${fa.alligatorState} (${fa.alligatorDirection}), AO: ${fa.aoStatus.signal}, AC: ${fa.acStatus.consecutiveGreen}G/${fa.acStatus.consecutiveRed}R, Setup: ${fa.setupScore}/100 → ${fa.setupDirection}${volTag}${fa.signals.length > 0 ? ` | ${fa.signals.join('; ')}` : ''}`
 }).join('\n')}
 
+### Elliott Wave Analysis (Algorithmic — Wave Structure & Fibonacci)
+**CRITICAL**: Elliott Waves help narrow down market projections by identifying wave structure. Use this to validate fractal setups and time entries/exits.
+${data.timeframes.map(tf => {
+    const ew = tf.elliottWave
+    if (!ew) return `- ${tf.timeframe}: No wave data`
+    const correctiveTag = ew.correctiveShape ? ` (${ew.correctiveShape})` : ''
+    const fibContext = ew.reasoning.includes('Fibonacci') ? ' 📊 At Key Fib Level' : ''
+    return `- ${tf.timeframe}: ${ew.waveType.toUpperCase()}${correctiveTag} | ${ew.currentWave} | Confidence: ${ew.confidence}% | Projected: ${ew.projectedMove}${fibContext}\n  Fib Retracements: 38.2%=${ew.fibonacciLevels.retracements.level_382.toFixed(5)}, 50%=${ew.fibonacciLevels.retracements.level_500.toFixed(5)}, 61.8%=${ew.fibonacciLevels.retracements.level_618.toFixed(5)}\n  Fib Extensions: 127.2%=${ew.fibonacciLevels.extensions.level_1272.toFixed(5)}, 161.8%=${ew.fibonacciLevels.extensions.level_1618.toFixed(5)}\n  Reasoning: ${ew.reasoning}`
+}).join('\n')}
+
+**Elliott Wave Rules for Narrative**:
+- **IMPULSIVE (5-wave)**: Market is trending. Wave 3 is typically strongest. Wave 5 signals completion/reversal risk.
+- **CORRECTIVE (3-wave)**: Counter-trend movement. A-B-C pattern before resuming main trend.
+- **Zigzag**: Sharp correction, C extends beyond A. Expect strong reversal.
+- **Flat**: Sideways correction, A-B-C roughly equal. Consolidation before continuation.
+- **Triangle**: Contracting ranges, breakout imminent.
+- **Fibonacci 61.8%**: Golden ratio - strongest retracement support/resistance.
+- **Fibonacci 161.8%**: Extension target for Wave 3 or C.
+- **MENTION IN NARRATIVE**: Always reference Elliott Wave structure when discussing trend direction, entries, or projections. Example: "We're in Wave 3 of an impulsive structure—the momentum sweet spot" or "This zigzag correction (Wave C) is nearing the 61.8% Fibonacci retracement, signaling trend resumption."
+
 ### Volume Flow Intelligence (Algorithmic — Order Flow Proxy)
 This data shows WHERE big money has been placed. Use it to validate or challenge Gemini/DeepSeek levels.
 ${data.timeframes.filter(tf => ['D', 'H4', 'H1'].includes(tf.timeframe)).map(tf => {

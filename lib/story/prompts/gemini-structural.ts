@@ -110,6 +110,13 @@ Analyze ALL the data above and produce a JSON response:
 
 **Bill Williams Fractal Analysis**: When the Alligator is 'eating' or 'awakening', note the direction and nearest valid fractals (those beyond the Teeth line). These are high-probability confluence zones. When the Alligator is 'sleeping', flag it as a compression/range phase — a breakout setup is building. If a fractal breakout has a VOLUME TRAP WARNING, flag it as a likely fake breakout regardless of other signals.
 
+**Elliott Wave Structure**: Use wave analysis to validate structural levels and projections:
+- **IMPULSIVE waves (5-wave)**: Identify if market is in trending phase. Wave 3 is strongest, Wave 5 signals potential reversal.
+- **CORRECTIVE waves (3-wave)**: Counter-trend A-B-C patterns. Zigzag/Flat/Triangle shapes indicate correction type.
+- **Fibonacci levels**: Use 38.2%, 50%, 61.8% retracements for entry zones. Use 127.2%, 161.8% extensions for targets.
+- **Wave confluence**: When Elliott Wave analysis confirms fractal direction and AMD phase, this is HIGH-CONFIDENCE structural alignment.
+- **Current wave position**: If in Wave 5 or Wave C, expect completion/reversal. If in Wave 3, expect strongest momentum.
+
 **Volume Flow Intelligence**: Use volume data as the SECOND LAYER of S/R validation:
 - **VPOC** is the single strongest price level — where the most business was done. Treat it as the most important S/R level on each timeframe.
 - **HVN (High Volume Nodes)** are the "real" support/resistance — where big money has been placed. Price approaching an HVN will likely bounce or stall.

@@ -57,6 +57,8 @@ Your job is to validate the structural analysis with hard numbers and compute pr
 - Cross-check EVERY price level from Gemini's analysis against actual swing highs/lows in the indicator data.
 - Flag any Gemini level that does NOT correspond to an actual swing high/low or candle boundary within 1 ATR tolerance.
 - Cross-check fractal levels against Alligator teeth position — fractals inside the "mouth" (between jaw and teeth) are NOT valid Bill Williams signals.
+- **Elliott Wave Validation**: Verify that proposed entry/exit levels align with Elliott Wave Fibonacci retracements/extensions. If entering on a "Wave 3" setup, confirm we're bouncing off 38.2-61.8% retracement. If targeting, use 127.2-161.8% extensions.
+- **Wave Structure Confirmation**: If Elliott Wave shows "corrective" pattern but Gemini suggests trend continuation, flag this as conflicting signals. Corrective waves (A-B-C) move counter-trend.
 - Include a "flagged_levels" array in your output listing any suspicious levels with reasons.
 - Your own precise_levels must ONLY use prices derivable from actual candle data.
 

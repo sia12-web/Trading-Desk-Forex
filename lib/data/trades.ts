@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Database } from '@/lib/types/database'
 import { cache } from 'react'
 import { getActiveAccountId } from '@/lib/oanda/account'
+import { startOfWeek, endOfDay, addDays, format } from 'date-fns'
 
 export type TradeReasoning = {
     entry?: string
@@ -321,3 +322,102 @@ export const getAvailablePairs = cache(async () => {
     const pairs = Array.from(new Set(data.map(t => t.pair)))
     return pairs.sort()
 })
+
+export async function getJournalWeeks() {
+    const supabase = await createClient()
+    const accountId = await getActiveAccountId()
+    const { data, error } = await supabase
+        .from('trades')
+        .select('created_at, closed_at')
+        .eq('oanda_account_id', accountId)
+        .order('created_at', { ascending: true })
+
+    if (error || !data || data.length === 0) return []
+
+    const firstDate = new Date(data[0].created_at)
+    const now = new Date()
+
+    const weeks = []
+    let current = startOfWeek(firstDate, { weekStartsOn: 1 })
+    const nowMonday = startOfWeek(now, { weekStartsOn: 1 })
+
+    while (current <= nowMonday) {
+        const mon = current
+        const fri = addDays(mon, 4)
+        weeks.push({
+            id: format(mon, 'yyyy-MM-dd'),
+            label: `Week ${format(mon, 'I')}: ${format(mon, 'MMM dd')} - ${format(fri, 'MMM dd')}`,
+            start: mon.toISOString(),
+            end: endOfDay(fri).toISOString()
+        })
+        current = addDays(current, 7)
+    }
+
+    return weeks.reverse() // Newest first
+}
+
+export async function getWeeklyJournalData(weekStart: string) {
+    const supabase = await createClient()
+    const accountId = await getActiveAccountId()
+    const startDate = new Date(weekStart)
+    const endDate = endOfDay(addDays(startDate, 6)) // Include Sunday as buffer, but market ends Fri
+
+    // Fetch all trades either created or closed in this week
+    const { data: trades, error } = await supabase
+        .from('trades')
+        .select(`
+          *,
+          trade_pnl (*)
+        `)
+        .eq('oanda_account_id', accountId)
+        .or(`created_at.gte.${startDate.toISOString()},closed_at.gte.${startDate.toISOString()}`)
+        .or(`created_at.lte.${endDate.toISOString()},closed_at.lte.${endDate.toISOString()}`)
+        .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    // Filter trades strictly to the week range
+    const weekTrades = trades.filter(t => {
+        const created = new Date(t.created_at)
+        const closed = t.closed_at ? new Date(t.closed_at) : null
+        return (created >= startDate && created <= endDate) || (closed && closed >= startDate && closed <= endDate)
+    })
+
+    // Group by day (Monday to Friday)
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    const dailyPnL: Record<string, { pnl: number, trades: any[] }> = {}
+    
+    days.forEach(day => {
+        dailyPnL[day] = { pnl: 0, trades: [] }
+    })
+
+    weekTrades.forEach(trade => {
+        // PnL belongs to the day it closed
+        // If not closed, it shows on the day it was created as a "planned" or "open" trade
+        const tradeDate = trade.closed_at ? new Date(trade.closed_at) : new Date(trade.created_at)
+        const dayName = format(tradeDate, 'EEEE')
+        
+        if (days.includes(dayName)) {
+            const pnlAmount = Number(trade.trade_pnl?.[0]?.pnl_amount || 0)
+            dailyPnL[dayName].pnl += pnlAmount
+            dailyPnL[dayName].trades.push(trade)
+        } else if (dayName === 'Sunday') {
+            // Count Sunday evening trades towards Monday
+            const pnlAmount = Number(trade.trade_pnl?.[0]?.pnl_amount || 0)
+            dailyPnL['Monday'].pnl += pnlAmount
+            dailyPnL['Monday'].trades.push(trade)
+        }
+    })
+
+    const totalPnL = Object.values(dailyPnL).reduce((acc, curr) => acc + curr.pnl, 0)
+
+    return {
+        totalPnL,
+        days: Object.entries(dailyPnL).map(([day, data]) => ({
+            name: day,
+            pnl: data.pnl,
+            trades: data.trades,
+            date: format(addDays(startDate, days.indexOf(day)), 'MMM dd')
+        }))
+    }
+}

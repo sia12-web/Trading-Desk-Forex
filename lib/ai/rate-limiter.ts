@@ -5,7 +5,7 @@
  */
 import { createClient } from '@/lib/supabase/server'
 
-const MAX_CALLS_PER_HOUR = 5
+const MAX_CALLS_PER_HOUR = 50
 const HOUR_MS = 60 * 60 * 1000
 
 export async function checkRateLimit(userId: string): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {

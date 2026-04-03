@@ -64,6 +64,7 @@ export async function generateStory(
 
     const startTime = Date.now()
     console.log(`${TAG} ════════ START ${pair} (source: ${options?.generationSource || 'manual'}) ════════`)
+    console.log(`${TAG} [Init] userId=${userId}, taskId=${taskId}, options=${JSON.stringify(options || {})}`)
 
     try {
         // ── Step 1: Collect OANDA data ──

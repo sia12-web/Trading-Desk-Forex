@@ -33,8 +33,10 @@ export async function POST(req: NextRequest) {
 
     // Fire and forget — pipeline runs in background
     generateStory(user.id, pair, taskId).catch(err => {
-        console.error('Story generation error:', err)
+        console.error(`[Story API] CRITICAL ERROR for ${pair}:`, err instanceof Error ? err.message : err)
+        console.error(`[Story API] Stack:`, err instanceof Error ? err.stack : 'no stack')
     })
 
+    console.log(`[Story API] Queued generation for ${pair} (taskId: ${taskId})`)
     return NextResponse.json({ taskId, remaining: limit.remaining })
 }

@@ -1026,6 +1026,61 @@ export interface Database {
                     reviewed_at?: string
                 }
             }
+            user_story_entries: {
+                Row: {
+                    id: string
+                    user_id: string
+                    pair: string
+                    entry_date: string
+                    content: string | null
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    pair: string
+                    entry_date: string
+                    content?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    pair?: string
+                    entry_date?: string
+                    content?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
+            user_story_screenshots: {
+                Row: {
+                    id: string
+                    entry_id: string
+                    user_id: string
+                    storage_path: string
+                    label: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    entry_id: string
+                    user_id: string
+                    storage_path: string
+                    label?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    entry_id?: string
+                    user_id?: string
+                    storage_path?: string
+                    label?: string | null
+                    created_at?: string
+                }
+            }
         }
     }
 }

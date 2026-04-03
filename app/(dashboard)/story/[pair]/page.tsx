@@ -275,7 +275,7 @@ export default function PairStoryPage() {
             </div>
 
             {activeTab === 'my' ? (
-                <div className="h-[700px]">
+                <div className="h-[800px]">
                     <MyStoryEditor pair={pair} />
                 </div>
             ) : episode ? (

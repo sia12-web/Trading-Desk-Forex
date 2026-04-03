@@ -8,7 +8,9 @@ cmds = ["npm ci"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "node .next/standalone/server.js"
+cmd = "NODE_OPTIONS='--max-old-space-size=2048' node .next/standalone/server.js"
 
 [variables]
 HOSTNAME = "0.0.0.0"
+NODE_ENV = "production"
+PORT = "8080"

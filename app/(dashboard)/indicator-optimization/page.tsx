@@ -8,12 +8,15 @@ import {
     AlertCircle,
     Clock,
     ChevronRight,
+    ChevronDown,
+    ChevronUp,
     Cpu,
     LineChart,
     BarChart3,
     Activity,
     Settings2,
-    Trash2
+    Trash2,
+    Search
 } from 'lucide-react'
 import { Card } from '@/components/ui/card' // Assuming basic UI components exist or using standard div
 import { ALLOWED_INSTRUMENTS, oandaToDisplayPair } from '@/lib/constants/instruments'
@@ -34,6 +37,7 @@ export default function IndicatorOptimizationPage() {
     const [running, setRunning] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [lastRun, setLastRun] = useState<string | null>(null)
+    const [searchQuery, setSearchQuery] = useState<string>('')
 
     const fetchData = useCallback(async () => {
         setLoading(true)
@@ -77,8 +81,14 @@ export default function IndicatorOptimizationPage() {
         }
     }
 
-    // Group calibrations by pair
-    const pairs = Array.from(new Set(calibrations.map(c => c.pair)))
+    // Group calibrations by pair and filter by search query
+    const allPairs = Array.from(new Set(calibrations.map(c => c.pair)))
+    const pairs = searchQuery
+        ? allPairs.filter(pair =>
+            pair.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            pair.replace('_', '/').toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        : allPairs
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-20">
@@ -155,6 +165,28 @@ export default function IndicatorOptimizationPage() {
                 )}
             </div>
 
+            {/* Search Bar */}
+            {!loading && pairs.length > 0 && (
+                <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={20} />
+                    <input
+                        type="text"
+                        placeholder="Search pairs (e.g., EUR, BTC, USD)..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors"
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 gap-6">
                 {loading ? (
@@ -165,10 +197,22 @@ export default function IndicatorOptimizationPage() {
                 ) : pairs.length === 0 ? (
                     <div className="text-center py-20 rounded-3xl border border-dashed border-neutral-800 bg-neutral-900/20">
                         <Settings2 size={48} className="mx-auto text-neutral-700 mb-4" />
-                        <h2 className="text-xl font-bold text-neutral-400 mb-2">No Optimized Pairs</h2>
+                        <h2 className="text-xl font-bold text-neutral-400 mb-2">
+                            {searchQuery ? 'No Matching Pairs' : 'No Optimized Pairs'}
+                        </h2>
                         <p className="text-neutral-500 max-w-sm mx-auto mb-8">
-                            Start by subscribing to instruments in the Story section, then run the calibration engine.
+                            {searchQuery
+                                ? `No pairs match "${searchQuery}". Try a different search term.`
+                                : 'Start by subscribing to instruments in the Story section, then run the calibration engine.'}
                         </p>
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
+                            >
+                                Clear Search
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-12">
@@ -189,6 +233,7 @@ export default function IndicatorOptimizationPage() {
 
 function InstrumentCalibrationRow({ pair, calibrations, onDelete }: { pair: string, calibrations: Calibration[], onDelete: () => void }) {
     const [deleting, setDeleting] = React.useState(false)
+    const [isExpanded, setIsExpanded] = React.useState(false)
     const tfs = ['M', 'W', 'D', 'H4', 'H3', 'H1']
 
     const handleDelete = async () => {
@@ -213,13 +258,37 @@ function InstrumentCalibrationRow({ pair, calibrations, onDelete }: { pair: stri
 
     return (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between px-2">
+            <div
+                className="flex items-center justify-between px-2 cursor-pointer group"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
                 <div className="flex items-center gap-3">
+                    <button
+                        className="p-1 rounded-lg hover:bg-neutral-800 transition-colors"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setIsExpanded(!isExpanded)
+                        }}
+                    >
+                        {isExpanded ? (
+                            <ChevronUp size={20} className="text-neutral-400" />
+                        ) : (
+                            <ChevronDown size={20} className="text-neutral-400" />
+                        )}
+                    </button>
                     <div className="w-1.5 h-6 rounded-full bg-blue-500" />
-                    <h2 className="text-lg font-bold text-neutral-200 tracking-wide uppercase">{pair.replace('_', ' / ')}</h2>
+                    <h2 className="text-lg font-bold text-neutral-200 tracking-wide uppercase group-hover:text-blue-400 transition-colors">
+                        {pair.replace('_', ' / ')}
+                    </h2>
+                    <span className="text-xs text-neutral-500 font-mono">
+                        {calibrations.length}/{tfs.length} calibrated
+                    </span>
                 </div>
                 <button
-                    onClick={handleDelete}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete()
+                    }}
                     disabled={deleting}
                     className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete all calibrations for this pair"
@@ -227,8 +296,9 @@ function InstrumentCalibrationRow({ pair, calibrations, onDelete }: { pair: stri
                     <Trash2 size={16} className={deleting ? 'animate-pulse' : ''} />
                 </button>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+
+            {isExpanded && (
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                 {tfs.map(tf => {
                     const cal = calibrations.find(c => c.timeframe === tf)
                     return (
@@ -239,7 +309,8 @@ function InstrumentCalibrationRow({ pair, calibrations, onDelete }: { pair: stri
                         />
                     )
                 })}
-            </div>
+                </div>
+            )}
         </div>
     )
 }

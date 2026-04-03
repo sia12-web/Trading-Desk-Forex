@@ -18,6 +18,18 @@ export const ALLOWED_INSTRUMENTS = [
 
     // Indices
     'NAS100_USD', 'SPX500_USD', 'US30_USD', 'DE30_EUR',
+
+    // Cryptocurrencies (via CoinGecko API - Free)
+    'CRYPTO_BTC_USD',   // Bitcoin
+    'CRYPTO_ETH_USD',   // Ethereum
+    'CRYPTO_BNB_USD',   // Binance Coin
+    'CRYPTO_SOL_USD',   // Solana
+    'CRYPTO_XRP_USD',   // Ripple
+    'CRYPTO_ADA_USD',   // Cardano
+    'CRYPTO_DOGE_USD',  // Dogecoin
+    'CRYPTO_AVAX_USD',  // Avalanche
+    'CRYPTO_DOT_USD',   // Polkadot
+    'CRYPTO_MATIC_USD', // Polygon
 ] as const
 
 export type AllowedInstrument = typeof ALLOWED_INSTRUMENTS[number]
@@ -31,7 +43,18 @@ export function displayToOandaPair(pair: string): string {
 
 /**
  * Convert OANDA format (EUR_USD) to display format (EUR/USD)
+ * Also handles crypto pairs (CRYPTO_BTC_USD -> BTC/USD)
  */
 export function oandaToDisplayPair(instrument: string): string {
+    if (instrument.startsWith('CRYPTO_')) {
+        return instrument.replace('CRYPTO_', '').replace('_', '/')
+    }
     return instrument.replace('_', '/')
+}
+
+/**
+ * Check if an instrument is a cryptocurrency
+ */
+export function isCryptoPair(instrument: string): boolean {
+    return instrument.startsWith('CRYPTO_')
 }

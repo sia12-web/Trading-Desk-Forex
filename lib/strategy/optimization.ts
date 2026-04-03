@@ -1,5 +1,5 @@
 import { getSubscribedPairs } from '@/lib/data/stories'
-import { getCandles } from '@/lib/oanda/client'
+import { getCandles } from '@/lib/data/candle-fetcher'
 import { callDeepSeek } from '@/lib/ai/clients/deepseek'
 import { createServiceClient } from '@/lib/supabase/service'
 import { OandaCandle } from '@/lib/types/oanda'

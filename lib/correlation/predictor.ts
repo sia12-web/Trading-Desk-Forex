@@ -6,8 +6,10 @@
  */
 
 import { callGemini, callClaude } from '@/lib/ai/clients'
+import { checkTomorrowTradingDay } from './calendar-checker'
 import type { CorrelationScenarioRow } from './types'
 import type { OandaPrice } from '@/lib/types/oanda'
+import type { TradingDayStatus } from './calendar-checker'
 
 export interface PredictionMatch {
   scenario: CorrelationScenarioRow
@@ -33,6 +35,7 @@ export interface TomorrowPrediction {
     supportingPatterns: number
     avgAccuracy: number
   }>
+  tradingDayStatus: TradingDayStatus
 }
 
 /**
@@ -44,6 +47,9 @@ export async function predictTomorrow(
   previousClose: Map<string, number>
 ): Promise<TomorrowPrediction> {
   console.log('[Predictor] Analyzing current conditions against patterns...')
+
+  // Check if tomorrow is a trading day
+  const tradingDayStatus = await checkTomorrowTradingDay()
 
   // Step 1: Find matching patterns
   const matches: PredictionMatch[] = []
@@ -154,7 +160,7 @@ export async function predictTomorrow(
     .slice(0, 5) // Top 5 predictions
 
   // Step 4: Use AI to synthesize predictions
-  const aiSynthesis = await synthesizePredictions(matches, topPredictions)
+  const aiSynthesis = await synthesizePredictions(matches, topPredictions, tradingDayStatus)
 
   // Step 5: Calculate overall confidence
   const avgAccuracy =
@@ -173,7 +179,8 @@ export async function predictTomorrow(
     predictions: matches,
     aiSynthesis,
     confidence,
-    topPredictions
+    topPredictions,
+    tradingDayStatus
   }
 }
 
@@ -188,14 +195,27 @@ async function synthesizePredictions(
     expectedMove: number
     supportingPatterns: number
     avgAccuracy: number
-  }>
+  }>,
+  tradingDayStatus: TradingDayStatus
 ): Promise<string> {
+  // If tomorrow is not a trading day, return calendar message
+  if (!tradingDayStatus.isTradingDay) {
+    return `${tradingDayStatus.reason}\n\nForex markets will be closed tomorrow. Current patterns will be evaluated for the next trading day (${new Date(tradingDayStatus.nextTradingDay!).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}). Monitor positions carefully as weekend gaps or post-holiday volatility may affect pattern reliability.`
+  }
+
   if (matches.length === 0) {
     return 'No strong patterns detected in current market conditions. Monitor for clearer signals.'
   }
 
   // Step 1: Gemini analyzes structural patterns
   const geminiPrompt = `You are analyzing forex correlation patterns to predict tomorrow's market movements.
+
+## CRITICAL ANTI-HALLUCINATION RULES
+1. ONLY reference the patterns and data provided below. DO NOT invent patterns, percentages, or outcomes.
+2. DO NOT mention specific news events, central bank actions, or economic data unless provided.
+3. DO NOT fabricate price levels, support/resistance zones, or technical indicators.
+4. If data is insufficient, say so. Do NOT make up information to fill gaps.
+5. Stick to the statistical evidence from the patterns. DO NOT add speculative market narratives.
 
 CURRENT MARKET CONDITIONS:
 ${matches
@@ -231,6 +251,18 @@ Keep your analysis concise (150-200 words).`
 
   // Step 2: Claude synthesizes actionable narrative
   const claudePrompt = `You are a trading analyst briefing a trader on tomorrow's forex predictions.
+
+## STRICT ANTI-HALLUCINATION PROTOCOL
+1. ONLY use information from the analytical insights and predictions below
+2. DO NOT invent:
+   - News events or economic data releases
+   - Central bank statements or policy changes
+   - Specific price targets or stop-loss levels
+   - Technical patterns not mentioned in the data
+   - Historical precedents or "similar situations"
+3. If you don't have enough data, acknowledge limitations
+4. Focus on the statistical patterns provided, not market speculation
+5. Every claim must trace back to a specific pattern number and accuracy percentage
 
 ANALYTICAL INSIGHTS:
 ${geminiAnalysis}

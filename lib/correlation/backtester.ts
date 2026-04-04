@@ -296,6 +296,17 @@ async function analyzeBacktestWithDeepSeek(
 ): Promise<string> {
   const prompt = `You are a quantitative analyst reviewing a forex pattern backtest.
 
+## CRITICAL ANTI-HALLUCINATION RULES
+1. ONLY analyze the backtest metrics provided below
+2. DO NOT reference:
+   - Specific market conditions or events not in the data
+   - Other strategies or benchmarks not provided
+   - Personal trading experiences or anecdotes
+   - Specific traders or funds
+3. Base ALL conclusions on the numerical metrics shown
+4. If a metric isn't provided, acknowledge the limitation
+5. Use statistical language: "The data suggests..." not "This will..."
+
 PATTERN:
 ${scenario.pattern_description}
 

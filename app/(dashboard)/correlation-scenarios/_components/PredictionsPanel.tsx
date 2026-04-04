@@ -75,6 +75,33 @@ export function PredictionsPanel() {
 
         {prediction && (
           <div className="space-y-4 mt-6">
+            {/* Trading Day Warning */}
+            {!prediction.tradingDayStatus.isTradingDay && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle size={20} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="text-amber-400 font-bold text-sm mb-1">
+                      Market Closed Tomorrow
+                    </div>
+                    <div className="text-amber-200/80 text-sm">
+                      {prediction.tradingDayStatus.reason}
+                    </div>
+                    {prediction.tradingDayStatus.nextTradingDay && (
+                      <div className="text-amber-200/60 text-xs mt-2">
+                        Next trading day:{' '}
+                        {new Date(prediction.tradingDayStatus.nextTradingDay).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Confidence Badge */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-neutral-400">Confidence:</span>

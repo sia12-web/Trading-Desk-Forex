@@ -59,6 +59,13 @@ function buildGeminiPrompt(scenario: CorrelationScenarioRow): string {
 
   return `You are a forex market analyst. Analyze this correlation pattern and explain the fundamental economic factors that might cause it.
 
+## ANTI-HALLUCINATION RULES
+1. ONLY reference the pattern data provided below
+2. DO NOT invent specific dates, events, or news releases
+3. DO NOT mention specific central bank officials or statements unless universally known principles
+4. Focus on general economic relationships (e.g., "risk appetite," "safe haven flows")
+5. If uncertain about causation, use phrases like "may be related to" or "could suggest"
+
 PATTERN:
 ${scenario.pattern_description}
 
@@ -92,6 +99,16 @@ function buildClaudePrompt(
   fundamentalAnalysis: string
 ): string {
   return `You are a trading coach explaining a forex correlation pattern to a trader.
+
+## STRICT ANTI-HALLUCINATION PROTOCOL
+1. ONLY use data from the pattern statistics and fundamental analysis provided
+2. DO NOT invent:
+   - Specific price levels or entry/exit points
+   - Upcoming economic events or data releases
+   - Historical examples or past occurrences beyond the statistics shown
+   - Technical indicators not mentioned in the data
+3. Base recommendations ONLY on the pattern's accuracy percentage and occurrence count
+4. If you lack data to answer something, say "The pattern data doesn't show..."
 
 PATTERN:
 ${scenario.pattern_description}

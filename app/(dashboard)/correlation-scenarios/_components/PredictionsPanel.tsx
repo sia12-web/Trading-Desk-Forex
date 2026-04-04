@@ -1,18 +1,54 @@
 'use client'
 
-import { useState } from 'react'
-import { TrendingUp, TrendingDown, Sparkles, AlertTriangle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { TrendingUp, TrendingDown, Sparkles, AlertTriangle, RefreshCw, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { TomorrowPrediction } from '@/lib/correlation/predictor'
 
+interface PredictionMetadata {
+  id: string
+  generated_at: string
+  expires_at: string
+  age_hours: number
+  age_minutes: number
+  staleness: 'fresh' | 'recent' | 'stale'
+  patterns_used: number
+  avg_accuracy: number
+  verified: boolean
+  accuracy_percentage: number | null
+}
+
 export function PredictionsPanel() {
   const [loading, setLoading] = useState(false)
   const [prediction, setPrediction] = useState<TomorrowPrediction | null>(null)
+  const [metadata, setMetadata] = useState<PredictionMetadata | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [usingCache, setUsingCache] = useState(false)
 
-  const handlePredict = async () => {
+  // Load cached prediction on mount
+  useEffect(() => {
+    loadCachedPrediction()
+  }, [])
+
+  const loadCachedPrediction = async () => {
+    try {
+      const res = await fetch('/api/correlation/predictions/latest')
+      const data = await res.json()
+
+      if (data.prediction) {
+        setPrediction(data.prediction)
+        setMetadata(data.metadata)
+        setUsingCache(true)
+      }
+    } catch (err) {
+      console.error('Failed to load cached prediction:', err)
+      // Silently fail - user can generate fresh prediction
+    }
+  }
+
+  const handlePredict = async (forceLive = false) => {
     setLoading(true)
     setError(null)
 
@@ -25,6 +61,8 @@ export function PredictionsPanel() {
       }
 
       setPrediction(data)
+      setMetadata(null)
+      setUsingCache(false)
     } catch (err) {
       console.error('Prediction error:', err)
       setError(err instanceof Error ? err.message : 'Failed to generate predictions')
@@ -39,6 +77,18 @@ export function PredictionsPanel() {
     low: 'bg-orange-500/10 text-orange-400 border-orange-500/30'
   }
 
+  const stalenessColor = {
+    fresh: 'text-green-400',
+    recent: 'text-yellow-400',
+    stale: 'text-orange-400'
+  }
+
+  const stalenessLabel = {
+    fresh: 'Fresh',
+    recent: 'Recent',
+    stale: 'Aging'
+  }
+
   return (
     <Card className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/30">
       <CardContent className="pt-6">
@@ -50,19 +100,55 @@ export function PredictionsPanel() {
             <div>
               <h2 className="text-xl font-bold text-white">Tomorrow's Predictions</h2>
               <p className="text-sm text-neutral-400">
-                AI-powered analysis of current market conditions
+                {usingCache ? 'Auto-generated using market close data' : 'AI-powered analysis of current conditions'}
               </p>
             </div>
           </div>
 
           <Button
-            onClick={handlePredict}
+            onClick={() => handlePredict(true)}
             disabled={loading}
             className="bg-purple-600 hover:bg-purple-500"
           >
-            {loading ? 'Analyzing...' : 'Predict Tomorrow'}
+            <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Analyzing...' : usingCache ? 'Refresh with Live Data' : 'Predict Tomorrow'}
           </Button>
         </div>
+
+        {/* Metadata - Staleness Indicator */}
+        {metadata && usingCache && (
+          <div className="mb-4 p-3 bg-neutral-900/50 border border-neutral-700 rounded-lg">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Clock size={14} className={stalenessColor[metadata.staleness]} />
+                <span className="text-neutral-400">
+                  Generated {metadata.age_hours > 0 ? `${metadata.age_hours} hours` : `${metadata.age_minutes} minutes`} ago
+                </span>
+                <Badge variant="outline" className={`${stalenessColor[metadata.staleness]} text-[10px]`}>
+                  {stalenessLabel[metadata.staleness]}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-4 text-neutral-500">
+                <span>{metadata.patterns_used} patterns used</span>
+                <span>{metadata.avg_accuracy.toFixed(1)}% avg accuracy</span>
+                {metadata.verified && metadata.accuracy_percentage !== null && (
+                  <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30 text-[10px]">
+                    Verified: {metadata.accuracy_percentage.toFixed(0)}% accurate
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!usingCache && prediction && (
+          <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+            <div className="flex items-center gap-2 text-xs text-blue-300">
+              <RefreshCw size={14} />
+              <span>Using live intraday data (may be less accurate than market close data)</span>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
@@ -215,9 +301,11 @@ export function PredictionsPanel() {
 
         {!prediction && !loading && !error && (
           <div className="text-center py-6 text-neutral-500 text-sm">
-            Click "Predict Tomorrow" to analyze current market conditions
+            Auto-generated predictions will appear here daily at 5:30 AM UTC
             <br />
-            against discovered correlation patterns
+            <span className="text-xs mt-2 block">
+              (Or click "Predict Tomorrow" to generate using live data now)
+            </span>
           </div>
         )}
       </CardContent>

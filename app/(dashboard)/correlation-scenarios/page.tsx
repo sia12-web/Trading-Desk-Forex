@@ -6,6 +6,7 @@ import { TrendingUp } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScenarioCard } from './_components/ScenarioCard'
+import { PredictionsPanel } from './_components/PredictionsPanel'
 import type { CorrelationScenarioRow, CorrelationCacheRow } from '@/lib/correlation/types'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -104,6 +105,9 @@ export default function CorrelationScenariosPage() {
         )}
       </div>
 
+      {/* Tomorrow's Predictions */}
+      <PredictionsPanel />
+
       {/* Controls */}
       <Card>
         <CardContent className="pt-6">
@@ -192,7 +196,11 @@ export default function CorrelationScenariosPage() {
             Showing {scenarios.length} pattern{scenarios.length !== 1 ? 's' : ''}
           </div>
           {scenarios.map(scenario => (
-            <ScenarioCard key={scenario.id} scenario={scenario} />
+            <ScenarioCard
+              key={scenario.id}
+              scenario={scenario}
+              onDelete={() => loadScenarios()}
+            />
           ))}
         </div>
       )}

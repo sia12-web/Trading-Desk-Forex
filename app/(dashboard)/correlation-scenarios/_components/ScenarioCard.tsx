@@ -1,22 +1,49 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { DayDistributionChart } from './DayDistributionChart'
 import type { CorrelationScenarioRow } from '@/lib/correlation/types'
 
 interface ScenarioCardProps {
   scenario: CorrelationScenarioRow
+  onDelete?: () => void
 }
 
-export function ScenarioCard({ scenario }: ScenarioCardProps) {
+export function ScenarioCard({ scenario, onDelete }: ScenarioCardProps) {
   const [expanded, setExpanded] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const accuracyColor =
     scenario.accuracy_percentage >= 70 ? 'text-green-400' :
     scenario.accuracy_percentage >= 60 ? 'text-yellow-400' :
     'text-orange-400'
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this pattern? This action cannot be undone.')) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/correlation/scenarios/${scenario.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to delete pattern')
+      }
+
+      onDelete?.()
+    } catch (error) {
+      console.error('Error deleting pattern:', error)
+      alert('Failed to delete pattern')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-neutral-700 transition-colors">
@@ -59,13 +86,29 @@ export function ScenarioCard({ scenario }: ScenarioCardProps) {
           </div>
         </div>
 
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-neutral-500 hover:text-white transition-colors p-2"
-          aria-label={expanded ? 'Collapse details' : 'Expand details'}
-        >
-          {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleDelete}
+            disabled={deleting}
+            variant="ghost"
+            size="sm"
+            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+          >
+            {deleting ? (
+              <span className="text-xs">Deleting...</span>
+            ) : (
+              <Trash2 size={16} />
+            )}
+          </Button>
+
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-neutral-500 hover:text-white transition-colors p-2"
+            aria-label={expanded ? 'Collapse details' : 'Expand details'}
+          >
+            {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </button>
+        </div>
       </div>
 
       {/* Expanded Details */}

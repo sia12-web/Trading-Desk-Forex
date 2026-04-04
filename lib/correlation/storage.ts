@@ -9,6 +9,18 @@ import type { DiscoveredPattern, CorrelationScenarioRow, CorrelationCacheRow } f
 import { generatePatternDescription } from './pattern-detector'
 
 /**
+ * Convert pattern condition count to pattern type string
+ */
+function getPatternType(conditionCount: number): 'two_pair' | 'three_pair' | 'four_pair' {
+  switch (conditionCount) {
+    case 2: return 'two_pair'
+    case 3: return 'three_pair'
+    case 4: return 'four_pair'
+    default: throw new Error(`Invalid condition count: ${conditionCount}`)
+  }
+}
+
+/**
  * Store discovered patterns in the database
  */
 export async function storePatterns(
@@ -65,7 +77,7 @@ export async function storePatterns(
 
     return {
       user_id: userId,
-      pattern_type: `${pattern.conditions.length}_pair` as 'two_pair' | 'three_pair' | 'four_pair',
+      pattern_type: getPatternType(pattern.conditions.length),
       conditions: pattern.conditions,
       expected_outcome: pattern.outcome,
       pattern_description: generatePatternDescription(pattern),

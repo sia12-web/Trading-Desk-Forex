@@ -100,19 +100,24 @@ export function PredictionsPanel() {
             <div>
               <h2 className="text-xl font-bold text-white">Tomorrow's Predictions</h2>
               <p className="text-sm text-neutral-400">
-                {usingCache ? 'Auto-generated using market close data' : 'AI-powered analysis of current conditions'}
+                {usingCache
+                  ? 'Auto-generated daily at 5:30 AM UTC using market close data'
+                  : 'Real-time analysis using current market conditions'}
               </p>
             </div>
           </div>
 
-          <Button
-            onClick={() => handlePredict(true)}
-            disabled={loading}
-            className="bg-purple-600 hover:bg-purple-500"
-          >
-            <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? 'Analyzing...' : usingCache ? 'Refresh with Live Data' : 'Predict Tomorrow'}
-          </Button>
+          {prediction && (
+            <Button
+              onClick={() => handlePredict(true)}
+              disabled={loading}
+              variant="outline"
+              className="border-purple-500/30 hover:bg-purple-500/10"
+            >
+              <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Analyzing...' : 'Refresh with Live Data'}
+            </Button>
+          )}
         </div>
 
         {/* Metadata - Staleness Indicator */}
@@ -300,12 +305,21 @@ export function PredictionsPanel() {
         )}
 
         {!prediction && !loading && !error && (
-          <div className="text-center py-6 text-neutral-500 text-sm">
-            Auto-generated predictions will appear here daily at 5:30 AM UTC
-            <br />
-            <span className="text-xs mt-2 block">
-              (Or click "Predict Tomorrow" to generate using live data now)
-            </span>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto mb-4">
+              <Clock size={24} className="text-purple-400" />
+            </div>
+            <p className="text-neutral-400 text-sm mb-2">
+              Predictions auto-generate daily at <span className="font-bold text-purple-400">5:30 AM UTC</span>
+            </p>
+            <p className="text-neutral-500 text-xs">
+              Using complete market close data for maximum accuracy
+            </p>
+            <div className="mt-6 p-4 bg-purple-900/10 border border-purple-500/20 rounded-lg max-w-md mx-auto">
+              <p className="text-xs text-neutral-400">
+                💡 First time? Run "Run Analysis" above to discover correlation patterns first.
+              </p>
+            </div>
           </div>
         )}
       </CardContent>

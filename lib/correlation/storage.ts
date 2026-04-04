@@ -53,9 +53,11 @@ export async function storePatterns(
 
     const avgTimeToOutcome =
       pattern.successCount > 0
-        ? pattern.occurrences
-            .filter(o => o.success)
-            .reduce((sum, o) => sum + o.timeToOutcome, 0) / pattern.successCount
+        ? Math.round(
+            pattern.occurrences
+              .filter(o => o.success)
+              .reduce((sum, o) => sum + o.timeToOutcome, 0) / pattern.successCount
+          )
         : null
 
     const sortedDays = Object.entries(pattern.dayDistribution).sort((a, b) => b[1] - a[1])
@@ -121,7 +123,7 @@ export async function storePatterns(
         condition_values: occurrence.conditionValues,
         outcome_success: occurrence.success,
         outcome_pips: occurrence.pips,
-        outcome_time_hours: occurrence.timeToOutcome
+        outcome_time_hours: Math.round(occurrence.timeToOutcome)
       })
     }
   }

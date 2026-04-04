@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { TrendingUp, Plus, Loader2, MessageSquare, Archive, Sparkles } from 'lucide-react'
+import { TrendingUp, Plus, Loader2, MessageSquare, Archive, Sparkles, Trash2 } from 'lucide-react'
 import { PairSelector } from '../story/_components/PairSelector'
 
 interface FundamentalSession {
@@ -23,7 +23,29 @@ export default function FundamentalsPage() {
     const [loading, setLoading] = useState(true)
     const [showSelector, setShowSelector] = useState(false)
     const [creating, setCreating] = useState(false)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active')
+
+    const handleDeleteSession = async (e: React.MouseEvent, sessionId: string) => {
+        e.stopPropagation()
+        if (!confirm('Are you sure you want to delete this session? All messages will be lost.')) return
+
+        setDeletingId(sessionId)
+        try {
+            const res = await fetch(`/api/fundamentals/sessions/${sessionId}`, {
+                method: 'DELETE',
+            })
+            if (!res.ok) throw new Error(await res.text())
+            
+            // Remove from local state
+            setSessions(prev => prev.filter(s => s.id !== sessionId))
+        } catch (err) {
+            console.error('Failed to delete session:', err)
+            alert('Failed to delete session')
+        } finally {
+            setDeletingId(null)
+        }
+    }
 
     const loadSessions = useCallback(async () => {
         setLoading(true)
@@ -171,10 +193,10 @@ export default function FundamentalsPage() {
             ) : (
                 <div className="grid gap-4">
                     {sessions.map(session => (
-                        <button
+                        <div
                             key={session.id}
                             onClick={() => router.push(`/fundamentals/${session.id}`)}
-                            className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 hover:border-neutral-700 hover:bg-neutral-900/70 transition-all text-left"
+                            className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 hover:border-neutral-700 hover:bg-neutral-900/70 transition-all text-left cursor-pointer group relative"
                         >
                             <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-3">
@@ -188,9 +210,22 @@ export default function FundamentalsPage() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-2 text-[11px] text-neutral-500">
-                                    <MessageSquare size={12} />
-                                    {session.messageCount || 0} messages
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+                                        <MessageSquare size={12} />
+                                        {session.messageCount || 0} messages
+                                    </div>
+                                    <button
+                                        onClick={(e) => handleDeleteSession(e, session.id)}
+                                        disabled={deletingId === session.id}
+                                        className="p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                    >
+                                        {deletingId === session.id ? (
+                                            <Loader2 size={14} className="animate-spin" />
+                                        ) : (
+                                            <Trash2 size={14} />
+                                        )}
+                                    </button>
                                 </div>
                             </div>
 
@@ -218,7 +253,7 @@ export default function FundamentalsPage() {
                                     </>
                                 )}
                             </div>
-                        </button>
+                        </div>
                     ))}
                 </div>
             )}
